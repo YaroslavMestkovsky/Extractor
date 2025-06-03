@@ -145,7 +145,7 @@ class BrowserAutomation:
             await self.page.fill(selector, text)
             self.logger.info(f"\tВведен текст в элемент")
 
-    async def _wait_for_download_url(self, timeout: int = 360) -> Optional[str]:
+    async def _wait_for_download_url(self, timeout: int = 360) -> Optional[Dict[str, Any]]:
         """
         Ожидание появления URL для скачивания файла.
 
@@ -153,20 +153,25 @@ class BrowserAutomation:
             timeout: Таймаут ожидания в секундах
 
         Returns:
-            Optional[str]: URL для скачивания или None, если URL не найден
+            Optional[Dict[str, Any]]: Словарь с URL и данными для авторизации или None
         """
         start_time = time.time()
-        download_url = None
+        download_data = None
         file_downloaded = False
 
         # Создаем обработчик для перехвата запросов
         async def handle_route(route):
-            nonlocal download_url, file_downloaded
+            nonlocal download_data, file_downloaded
             request = route.request
             if "/download/" in request.url:
-                if not download_url:
-                    download_url = request.url
-                    self.logger.info(f"Найден URL для скачивания: {download_url}")
+                if not download_data:
+                    # Собираем все необходимые данные для авторизации
+                    download_data = {
+                        'url': request.url,
+                        'headers': request.headers,
+                        'cookies': await self.context.cookies()
+                    }
+                    self.logger.info(f"Найден URL для скачивания: {request.url}")
                     # Блокируем первый запрос, так как мы будем скачивать файл через aiohttp
                     await route.abort()
                     self.logger.info("Блокируем автоматическое скачивание файла")
@@ -182,7 +187,7 @@ class BrowserAutomation:
         await self.page.route("**/*", handle_route)
 
         # Ждем появления URL или истечения таймаута
-        while time.time() - start_time < timeout and not download_url:
+        while time.time() - start_time < timeout and not download_data:
             await asyncio.sleep(1)
             remaining = int(timeout - (time.time() - start_time))
             print(f"\rОжидание URL для скачивания... Осталось {remaining} сек", end="", flush=True)
@@ -195,12 +200,12 @@ class BrowserAutomation:
 
         # Логируем результат ожидания
         elapsed_time = int(time.time() - start_time)
-        if download_url:
+        if download_data:
             self.logger.info(f"URL найден через {elapsed_time} сек")
         else:
             self.logger.error(f"URL не найден после {elapsed_time} сек ожидания")
 
-        return download_url
+        return download_data
 
     async def _download_file(self, filename: str) -> Optional[str]:
         """
@@ -213,35 +218,15 @@ class BrowserAutomation:
             Optional[str]: Путь к сохраненному файлу или None в случае ошибки
         """
         try:
-            # Ждем появления URL для скачивания
-            download_url = await self._wait_for_download_url()
-            if not download_url:
+            # Ждем появления URL для скачивания и получаем данные для авторизации
+            download_data = await self._wait_for_download_url()
+            if not download_data:
                 return None
 
-            # Получаем cookies и headers
-            cookies = await self.context.cookies()
-            cookies_dict = {cookie["name"]: cookie["value"] for cookie in cookies}
-            
-            # Получаем все заголовки из текущего запроса
-            headers = await self.page.evaluate("""() => {
-                const headers = {};
-                for (const [key, value] of Object.entries(window.performance.getEntriesByType('resource')[0].requestHeaders || {})) {
-                    headers[key] = value;
-                }
-                return headers;
-            }""")
-            
-            # Добавляем обязательные заголовки
-            headers.update({
-                "User-Agent": await self.page.evaluate("navigator.userAgent"),
-                "Referer": self.page.url,
-                "Accept": "*/*",
-                "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
-                "Connection": "keep-alive",
-                "Sec-Fetch-Dest": "empty",
-                "Sec-Fetch-Mode": "cors",
-                "Sec-Fetch-Site": "same-origin"
-            })
+            # Подготавливаем данные для запроса
+            download_url = download_data['url']
+            headers = download_data['headers']
+            cookies_dict = {cookie["name"]: cookie["value"] for cookie in download_data['cookies']}
 
             # Скачиваем файл
             async with aiohttp.ClientSession() as session:

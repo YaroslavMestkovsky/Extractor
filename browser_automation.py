@@ -194,8 +194,16 @@ class BrowserAutomation:
         self.page.on("response", lambda response: self.logger.info(f"Событие response: {response.url} - {response.headers.get('content-type', '')}"))
         self.page.on("console", lambda msg: self.logger.info(f"Консоль браузера: {msg.text}"))
         
+        # Отслеживаем WebSocket сообщения
+        self.page.on("websocket", lambda ws: self.logger.info(f"WebSocket открыт: {ws.url}"))
+        self.page.on("websocket", lambda ws: ws.on("framesent", lambda data: self.logger.info(f"WebSocket отправлено: {data}")))
+        self.page.on("websocket", lambda ws: ws.on("framereceived", lambda data: self.logger.info(f"WebSocket получено: {data}")))
+        
         # Отслеживаем диалоги
         self.page.on("dialog", lambda dialog: self.logger.info(f"Диалог: {dialog.type} - {dialog.message}"))
+        
+        # Отслеживаем события qMSExt
+        self.page.on("console", lambda msg: self.logger.info(f"qMSExt событие: {msg.text}") if "qMSExt" in msg.text else None)
         
         self.logger.info("Браузер успешно инициализирован")
 

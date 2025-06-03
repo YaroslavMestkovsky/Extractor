@@ -172,9 +172,12 @@ class BrowserAutomation:
                         'cookies': await self.context.cookies()
                     }
                     self.logger.info(f"Найден URL для скачивания: {request.url}")
-                    # Блокируем первый запрос, так как мы будем скачивать файл через aiohttp
-                    await route.abort()
-                    self.logger.info("Блокируем автоматическое скачивание файла")
+                    
+                    # Модифицируем запрос, чтобы предотвратить автоматическое скачивание
+                    headers = dict(request.headers)
+                    headers['Accept'] = 'text/plain'  # Меняем тип контента
+                    await route.continue_(headers=headers)
+                    self.logger.info("Модифицируем запрос для предотвращения автоматического скачивания")
                 elif file_downloaded:
                     # Если файл уже скачан, блокируем повторный запрос
                     await route.abort()
@@ -225,8 +228,18 @@ class BrowserAutomation:
 
             # Подготавливаем данные для запроса
             download_url = download_data['url']
-            headers = download_data['headers']
+            headers = dict(download_data['headers'])
             cookies_dict = {cookie["name"]: cookie["value"] for cookie in download_data['cookies']}
+
+            # Добавляем необходимые заголовки
+            headers.update({
+                "Accept": "*/*",
+                "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+                "Connection": "keep-alive",
+                "Sec-Fetch-Dest": "empty",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Site": "same-origin"
+            })
 
             # Скачиваем файл
             async with aiohttp.ClientSession() as session:

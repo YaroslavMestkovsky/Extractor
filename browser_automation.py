@@ -9,6 +9,7 @@ import asyncio
 import logging
 import os
 import time
+import json
 from pathlib import Path
 from typing import Dict, Any, Optional
 
@@ -31,6 +32,7 @@ class BrowserAutomation:
         self.context: Optional[BrowserContext] = None
         self.page: Optional[Page] = None
         self.playwright = None
+        self.qmsext_ws = None  # WebSocket соединение с qMSExt
         
         # Пути к локальным браузерам
         self.browser_paths = {
@@ -141,25 +143,53 @@ class BrowserAutomation:
             await self.page.fill(selector, text)
             self.logger.info(f"\tВведен текст в элемент")
 
-    async def _handle_download(self, download: Download) -> None:
+    async def _handle_websocket_message(self, message: str) -> None:
         """
-        Обработка скачивания файла.
+        Обработка входящих WebSocket сообщений.
 
         Args:
-            download: Объект загрузки
+            message: Сообщение от WebSocket
         """
         try:
-            # Получаем имя файла из заголовка Content-Disposition
-            filename = download.suggested_filename
-            if not filename:
-                filename = f"downloaded_file_{int(time.time())}.csv"
-            
-            # Сохраняем файл в директорию Downloads
-            file_path = self.downloads_dir / filename
-            await download.save_as(file_path)
-            self.logger.info(f"Файл успешно сохранен: {file_path}")
+            data = json.loads(message)
+            if isinstance(data, list):
+                for item in data:
+                    if item.get('Act') == 'DO' and item.get('Fn') == 'SaveToClipbrd':
+                        # Обработка сохранения файла
+                        file_data = item.get('Pars', [])[0]
+                        if isinstance(file_data, str):
+                            file_path = Path(self.downloads_dir) / f"downloaded_file_{int(time.time())}.csv"
+                            with open(file_path, 'w', encoding='utf-8') as f:
+                                f.write(file_data)
+                            self.logger.info(f"Файл успешно сохранен: {file_path}")
         except Exception as e:
-            self.logger.error(f"Ошибка при сохранении файла: {str(e)}")
+            self.logger.error(f"Ошибка при обработке WebSocket сообщения: {str(e)}")
+
+    async def _setup_websocket_handlers(self) -> None:
+        """Настройка обработчиков WebSocket сообщений."""
+        # Обработчик для WebSocket соединения с qMSExt
+        self.page.on("websocket", lambda ws: self._handle_qmsext_connection(ws))
+        
+        # Обработчик для WebSocket соединения с сервером
+        self.page.on("websocket", lambda ws: ws.on("framesent", lambda data: self.logger.info(f"WebSocket отправлено: {data}")))
+        self.page.on("websocket", lambda ws: ws.on("framereceived", lambda data: self._handle_websocket_message(data)))
+
+    async def _handle_qmsext_connection(self, ws) -> None:
+        """
+        Обработка соединения с qMSExt.
+
+        Args:
+            ws: WebSocket соединение
+        """
+        if "localhost:48780" in ws.url:
+            self.qmsext_ws = ws
+            self.logger.info("Установлено соединение с qMSExt")
+            
+            # Подписываемся на события qMSExt
+            await ws.send(json.dumps({
+                "Action": "subscribe",
+                "Events": ["SaveToClipbrd", "GetXMLData", "GetCalcData"]
+            }))
 
     async def setup_browser(self) -> None:
         """Инициализация браузера и создание нового контекста."""
@@ -188,23 +218,9 @@ class BrowserAutomation:
         # Устанавливаем обработчики событий
         self.page = await self.context.new_page()
         
-        # Отслеживаем все события, связанные с загрузкой
-        self.page.on("download", lambda download: self.logger.info(f"Событие download: {download}"))
-        self.page.on("request", lambda request: self.logger.info(f"Событие request: {request.url}"))
-        self.page.on("response", lambda response: self.logger.info(f"Событие response: {response.url} - {response.headers.get('content-type', '')}"))
-        self.page.on("console", lambda msg: self.logger.info(f"Консоль браузера: {msg.text}"))
-        
-        # Отслеживаем WebSocket сообщения
-        self.page.on("websocket", lambda ws: self.logger.info(f"WebSocket открыт: {ws.url}"))
-        self.page.on("websocket", lambda ws: ws.on("framesent", lambda data: self.logger.info(f"WebSocket отправлено: {data}")))
-        self.page.on("websocket", lambda ws: ws.on("framereceived", lambda data: self.logger.info(f"WebSocket получено: {data}")))
-        
-        # Отслеживаем диалоги
-        self.page.on("dialog", lambda dialog: self.logger.info(f"Диалог: {dialog.type} - {dialog.message}"))
-        
-        # Отслеживаем события qMSExt
-        self.page.on("console", lambda msg: self.logger.info(f"qMSExt событие: {msg.text}") if "qMSExt" in msg.text else None)
-        
+        # Настраиваем обработчики WebSocket
+        await self._setup_websocket_handlers()
+
         self.logger.info("Браузер успешно инициализирован")
 
     async def close_browser(self) -> None:

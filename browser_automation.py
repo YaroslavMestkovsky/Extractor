@@ -259,8 +259,8 @@ class BrowserAutomation:
                 await self.close_browser()
             else:
                 self.logger.info("Браузер оставлен открытым на некоторое время после выполнения всех действий.")
-                # time.sleep(self.config['other'].get('sleep', 1))
-                # await self.close_browser()
+                time.sleep(self.config['other'].get('sleep', 1))
+                await self.close_browser()
 
         except Exception as e:
             self.logger.error(f"Произошла ошибка: {str(e)}")

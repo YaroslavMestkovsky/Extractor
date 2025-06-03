@@ -83,14 +83,14 @@ class BrowserAutomation:
             for sel in selector:
                 try:
                     await self.page.wait_for_selector(sel, timeout=timeout)
-                    self.logger.info(f"\tЭлемент {sel} успешно загружен")
+                    self.logger.info(f"\tЭлемент успешно загружен")
                     return
                 except Exception:
                     continue
             raise Exception(f"Ни один из селекторов {selector} не был найден")
         else:
             await self.page.wait_for_selector(selector, timeout=timeout)
-            self.logger.info(f"\tЭлемент {selector} успешно загружен")
+            self.logger.info(f"\tЭлемент успешно загружен")
 
     async def click_element(self, selector, wait_for: bool = True) -> None:
         """
@@ -107,14 +107,14 @@ class BrowserAutomation:
             for sel in selector:
                 try:
                     await self.page.click(sel)
-                    self.logger.info(f"\tВыполнено нажатие на элемент {sel}")
+                    self.logger.info(f"\tВыполнено нажатие на элемент")
                     return
                 except Exception:
                     continue
             raise Exception(f"Не удалось кликнуть ни по одному из селекторов {selector}")
         else:
             await self.page.click(selector)
-            self.logger.info(f"\tВыполнено нажатие на элемент {selector}")
+            self.logger.info(f"\tВыполнено нажатие на элемент")
 
     async def input_text(self, selector, text: str, wait_for: bool = True) -> None:
         """
@@ -132,14 +132,14 @@ class BrowserAutomation:
             for sel in selector:
                 try:
                     await self.page.fill(sel, text)
-                    self.logger.info(f"\tВведен текст в элемент {sel}")
+                    self.logger.info(f"\tВведен текст в элемент")
                     return
                 except Exception:
                     continue
             raise Exception(f"Не удалось ввести текст ни в один из селекторов {selector}")
         else:
             await self.page.fill(selector, text)
-            self.logger.info(f"\tВведен текст в элемент {selector}")
+            self.logger.info(f"\tВведен текст в элемент")
 
     async def _handle_download(self, download: Download) -> None:
         """

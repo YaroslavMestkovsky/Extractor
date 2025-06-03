@@ -219,8 +219,12 @@ class BrowserAutomation:
                 wait_for = action.get('wait_for', True)
                 description = action.get('description', '')
                 timeout = action.get('timeout', None)
+                wait = action.get('wait', None)
 
                 self.logger.info(f"Выполнение действия: {description}")
+
+                if wait:
+                    await asyncio.sleep(wait)
 
                 if action_type == 'click':
                     await self.click_element(selector, wait_for)

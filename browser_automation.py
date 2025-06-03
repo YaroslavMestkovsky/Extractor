@@ -72,7 +72,7 @@ class BrowserAutomation:
             timeout: Таймаут ожидания в миллисекундах
         """
         await self.page.wait_for_selector(selector, timeout=timeout)
-        self.logger.info(f"Элемент {selector} успешно загружен")
+        self.logger.info(f"\tЭлемент {selector} успешно загружен")
 
     async def click_element(self, selector: str, wait_for: bool = True) -> None:
         """
@@ -86,7 +86,7 @@ class BrowserAutomation:
             await self._wait_for_element(selector)
         
         await self.page.click(selector)
-        self.logger.info(f"Выполнено нажатие на элемент {selector}")
+        self.logger.info(f"\tВыполнено нажатие на элемент {selector}")
 
     async def input_text(self, selector: str, text: str, wait_for: bool = True) -> None:
         """
@@ -101,7 +101,7 @@ class BrowserAutomation:
             await self._wait_for_element(selector)
         
         await self.page.fill(selector, text)
-        self.logger.info(f"Введен текст в элемент {selector}")
+        self.logger.info(f"\tВведен текст в элемент {selector}")
 
     async def setup_browser(self) -> None:
         """Инициализация браузера и создание нового контекста."""

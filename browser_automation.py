@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 
 import yaml
-from playwright.async_api import async_playwright, Page, Browser, BrowserContext
+from playwright.async_api import async_playwright, Page, Browser, BrowserContext, Download
 
 class BrowserAutomation:
     """Класс для автоматизации действий в браузере."""
@@ -38,6 +38,10 @@ class BrowserAutomation:
             'firefox': str(Path('browsers/firefox').absolute()),
             'webkit': str(Path('browsers/webkit').absolute())
         }
+        
+        # Создаем директорию для загрузок, если она не существует
+        self.downloads_dir = Path('Downloads')
+        self.downloads_dir.mkdir(exist_ok=True)
 
     def _load_config(self, config_path: str) -> Dict[str, Any]:
         """
@@ -133,6 +137,26 @@ class BrowserAutomation:
             await self.page.fill(selector, text)
             self.logger.info(f"\tВведен текст в элемент {selector}")
 
+    async def _handle_download(self, download: Download) -> None:
+        """
+        Обработка скачивания файла.
+
+        Args:
+            download: Объект загрузки
+        """
+        try:
+            # Получаем имя файла из заголовка Content-Disposition
+            filename = download.suggested_filename
+            if not filename:
+                filename = f"downloaded_file_{int(time.time())}.csv"
+            
+            # Сохраняем файл в директорию Downloads
+            file_path = self.downloads_dir / filename
+            await download.save_as(file_path)
+            self.logger.info(f"Файл успешно сохранен: {file_path}")
+        except Exception as e:
+            self.logger.error(f"Ошибка при сохранении файла: {str(e)}")
+
     async def setup_browser(self) -> None:
         """Инициализация браузера и создание нового контекста."""
         self.playwright = await async_playwright().start()
@@ -148,11 +172,19 @@ class BrowserAutomation:
             self.browser = await self.playwright.chromium.launch(
                 headless=False,
                 executable_path=executable_path,
-                args = ["--start-maximized"],
+                args=["--start-maximized"],
             )
             
-        self.context = await self.browser.new_context(no_viewport=True)
+        # Настраиваем контекст с отключенным автоматическим открытием файлов
+        self.context = await self.browser.new_context(
+            no_viewport=True,
+            accept_downloads=True
+        )
+        
+        # Устанавливаем обработчик загрузок
         self.page = await self.context.new_page()
+        self.page.on("download", self._handle_download)
+        
         self.logger.info("Браузер успешно инициализирован")
 
     async def close_browser(self) -> None:

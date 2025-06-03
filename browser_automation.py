@@ -197,21 +197,52 @@ async def main():
     except KeyboardInterrupt:
         automation.logger.info("Получен сигнал завершения. Закрытие браузера...")
         automation.end = True
-        time.sleep(3)
-        await automation.close_browser()
+        try:
+            await automation.close_browser()
+        except Exception as e:
+            automation.logger.error(f"Ошибка при закрытии браузера: {str(e)}")
+        finally:
+            automation.logger.info("Программа завершена пользователем")
     except Exception as e:
         automation.logger.error(f"Произошла ошибка: {str(e)}")
-        await automation.close_browser()
+        try:
+            await automation.close_browser()
+        except Exception as close_error:
+            automation.logger.error(f"Ошибка при закрытии браузера: {str(close_error)}")
 
 def run():
     """Запуск программы с обработкой ошибок."""
     logger = logging.getLogger(__name__)
     try:
-        asyncio.run(main())
+        # Настройка обработки сигналов для Windows
+        if os.name == 'nt':
+            import signal
+            signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+        # Создаем новый event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        try:
+            loop.run_until_complete(main())
+        finally:
+            # Закрываем все задачи
+            pending = asyncio.all_tasks(loop)
+            for task in pending:
+                task.cancel()
+
+            # Запускаем loop до завершения всех задач
+            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+
+            # Закрываем loop
+            loop.close()
+
     except KeyboardInterrupt:
         logger.info("Программа завершена пользователем")
     except Exception as e:
         logger.error(f"Произошла ошибка: {str(e)}")
+    finally:
+        logger.info("Программа завершена")
 
 if __name__ == "__main__":
     run()

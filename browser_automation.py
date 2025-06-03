@@ -63,7 +63,7 @@ class BrowserAutomation:
         )
         self.logger = logging.getLogger(__name__)
 
-    async def _wait_for_element(self, selector: str | list[str], timeout: int = 30000) -> None:
+    async def _wait_for_element(self, selector, timeout: int = 30000) -> None:
         """
         Ожидание появления элемента на странице.
 
@@ -84,7 +84,7 @@ class BrowserAutomation:
             await self.page.wait_for_selector(selector, timeout=timeout)
             self.logger.info(f"\tЭлемент {selector} успешно загружен")
 
-    async def click_element(self, selector: str | list[str], wait_for: bool = True) -> None:
+    async def click_element(self, selector, wait_for: bool = True) -> None:
         """
         Нажатие на элемент.
 
@@ -108,7 +108,7 @@ class BrowserAutomation:
             await self.page.click(selector)
             self.logger.info(f"\tВыполнено нажатие на элемент {selector}")
 
-    async def input_text(self, selector: str | list[str], text: str, wait_for: bool = True) -> None:
+    async def input_text(self, selector, text: str, wait_for: bool = True) -> None:
         """
         Ввод текста в поле ввода.
 
@@ -142,15 +142,16 @@ class BrowserAutomation:
         if not os.path.exists(executable_path):
             self.logger.warning(f"Локальный браузер не найден по пути {executable_path}")
             self.logger.info("Используем браузер из системной установки")
-            self.browser = await self.playwright.chromium.launch(headless=False)
+            self.browser = await self.playwright.chromium.launch(headless=False, args=["--start-maximized"])
         else:
             self.logger.info(f"Используем локальный браузер из {executable_path}")
             self.browser = await self.playwright.chromium.launch(
                 headless=False,
-                executable_path=executable_path
+                executable_path=executable_path,
+                args = ["--start-maximized"],
             )
             
-        self.context = await self.browser.new_context()
+        self.context = await self.browser.new_context(no_viewport=True)
         self.page = await self.context.new_page()
         self.logger.info("Браузер успешно инициализирован")
 

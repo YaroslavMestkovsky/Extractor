@@ -145,7 +145,7 @@ class BrowserAutomation:
             await self.page.fill(selector, text)
             self.logger.info(f"\tВведен текст в элемент")
 
-    async def _wait_for_download_url(self, timeout: int = 360) -> Optional[Dict[str, Any]]:
+    async def _wait_for_download_url(self, timeout: int = 360) -> Optional[str]:
         """
         Ожидание появления URL для скачивания файла.
 
@@ -153,44 +153,27 @@ class BrowserAutomation:
             timeout: Таймаут ожидания в секундах
 
         Returns:
-            Optional[Dict[str, Any]]: Словарь с URL и данными для авторизации или None
+            Optional[str]: URL для скачивания или None, если URL не найден
         """
         start_time = time.time()
-        download_data = None
-        file_downloaded = False
+        download_url = None
 
         # Создаем обработчик для перехвата запросов
         async def handle_route(route):
-            nonlocal download_data, file_downloaded
+            nonlocal download_url
             request = route.request
             if "/download/" in request.url:
-                if not download_data:
-                    # Собираем все необходимые данные для авторизации
-                    download_data = {
-                        'url': request.url,
-                        'headers': request.headers,
-                        'cookies': await self.context.cookies()
-                    }
+                if not download_url:
+                    download_url = request.url
                     self.logger.info(f"Найден URL для скачивания: {request.url}")
-                    
-                    # Модифицируем запрос, чтобы предотвратить автоматическое скачивание
-                    headers = dict(request.headers)
-                    headers['Accept'] = 'text/plain'  # Меняем тип контента
-                    await route.continue_(headers=headers)
-                    self.logger.info("Модифицируем запрос для предотвращения автоматического скачивания")
-                elif file_downloaded:
-                    # Если файл уже скачан, блокируем повторный запрос
-                    await route.abort()
-                    self.logger.info("Блокируем повторное скачивание файла")
-            else:
-                # Пропускаем все остальные запросы
+                # Пропускаем запрос
                 await route.continue_()
 
         # Устанавливаем обработчик
         await self.page.route("**/*", handle_route)
 
         # Ждем появления URL или истечения таймаута
-        while time.time() - start_time < timeout and not download_data:
+        while time.time() - start_time < timeout and not download_url:
             await asyncio.sleep(1)
             remaining = int(timeout - (time.time() - start_time))
             print(f"\rОжидание URL для скачивания... Осталось {remaining} сек", end="", flush=True)
@@ -203,12 +186,12 @@ class BrowserAutomation:
 
         # Логируем результат ожидания
         elapsed_time = int(time.time() - start_time)
-        if download_data:
+        if download_url:
             self.logger.info(f"URL найден через {elapsed_time} сек")
         else:
             self.logger.error(f"URL не найден после {elapsed_time} сек ожидания")
 
-        return download_data
+        return download_url
 
     async def _download_file(self, filename: str) -> Optional[str]:
         """
@@ -221,56 +204,22 @@ class BrowserAutomation:
             Optional[str]: Путь к сохраненному файлу или None в случае ошибки
         """
         try:
-            # Ждем появления URL для скачивания и получаем данные для авторизации
-            download_data = await self._wait_for_download_url()
-            if not download_data:
+            # Ждем появления URL для скачивания
+            download_url = await self._wait_for_download_url()
+            if not download_url:
                 return None
 
-            # Подготавливаем данные для запроса
-            download_url = download_data['url']
-            headers = dict(download_data['headers'])
-            cookies_dict = {cookie["name"]: cookie["value"] for cookie in download_data['cookies']}
-
-            # Добавляем необходимые заголовки
-            headers.update({
-                "Accept": "*/*",
-                "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
-                "Connection": "keep-alive",
-                "Sec-Fetch-Dest": "empty",
-                "Sec-Fetch-Mode": "cors",
-                "Sec-Fetch-Site": "same-origin"
-            })
-
-            # Скачиваем файл
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    download_url,
-                    cookies=cookies_dict,
-                    headers=headers,
-                    ssl=False,
-                    allow_redirects=True
-                ) as response:
-                    if response.status == 200:
-                        file_path = self.downloads_dir / filename
-                        with open(file_path, "wb") as f:
-                            while True:
-                                chunk = await response.content.read(8192)
-                                if not chunk:
-                                    break
-                                f.write(chunk)
-                        self.logger.info(f"Файл успешно сохранен: {file_path}")
-                        # Отмечаем, что файл скачан
-                        self.file_downloaded = True
-                        return str(file_path)
-                    else:
-                        self.logger.error(f"Ошибка при скачивании файла: {response.status}")
-                        # Добавляем больше информации об ошибке
-                        try:
-                            error_text = await response.text()
-                            self.logger.error(f"Текст ошибки: {error_text}")
-                        except Exception as e:
-                            self.logger.error(f"Ошибка: {str(e)}")
-                        return None
+            # Настраиваем обработчик для скачивания
+            download_path = self.downloads_dir / filename
+            async with self.page.expect_download() as download_info:
+                # Открываем URL в новой вкладке
+                await self.page.goto(download_url)
+                # Ждем начала скачивания
+                download = await download_info.value
+                # Сохраняем файл
+                await download.save_as(download_path)
+                self.logger.info(f"Файл успешно сохранен: {download_path}")
+                return str(download_path)
 
         except Exception as e:
             self.logger.error(f"Ошибка при скачивании файла: {str(e)}")

@@ -180,9 +180,6 @@ class BrowserAutomation:
 
                 while not self.end:
                     time.sleep(3)
-
-                await self.close_browser()
-
         except Exception as e:
             self.logger.error(f"Произошла ошибка: {str(e)}")
             raise
@@ -200,6 +197,8 @@ async def main():
     except KeyboardInterrupt:
         automation.logger.info("Получен сигнал завершения. Закрытие браузера...")
         automation.end = True
+        time.sleep(3)
+        await automation.close_browser()
     except Exception as e:
         automation.logger.error(f"Произошла ошибка: {str(e)}")
         await automation.close_browser()

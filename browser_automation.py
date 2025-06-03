@@ -218,6 +218,7 @@ class BrowserAutomation:
                 selector = action['selector']
                 wait_for = action.get('wait_for', True)
                 description = action.get('description', '')
+                timeout = action.get('timeout', None)
 
                 self.logger.info(f"Выполнение действия: {description}")
 
@@ -232,6 +233,9 @@ class BrowserAutomation:
                         for key in config_path:
                             value = value[key]
                     await self.input_text(selector, value, wait_for)
+
+                if timeout:
+                    await asyncio.sleep(timeout)
 
             # Проверяем настройку закрытия браузера
             if self.config['site'].get('close_browser_after_completion', True):

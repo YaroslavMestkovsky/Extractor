@@ -277,7 +277,7 @@ class BrowserAutomation:
 
             for action in self.config['actions']:
                 action_type = action['type']
-                selector = action['selector']
+                selector = action.get('selector', None)
                 wait_for = action.get('wait_for', True)
                 description = action.get('description', '')
                 timeout = action.get('timeout', None)
@@ -288,9 +288,9 @@ class BrowserAutomation:
                 if wait:
                     await asyncio.sleep(wait)
 
-                if action_type == 'click':
+                if action_type == 'click' and selector:
                     await self.click_element(selector, wait_for)
-                elif action_type == 'input':
+                elif action_type == 'input' and selector:
                     value = action['value']
                     # Подстановка значений из конфигурации
                     if isinstance(value, str) and value.startswith('${'):
@@ -307,7 +307,7 @@ class BrowserAutomation:
                     # Если есть селектор, кликаем по нему для инициации скачивания
                     if selector:
                         await self.click_element(selector, wait_for)
-                    
+
                     # Ждем и скачиваем файл
                     file_path = await self._download_file(filename)
                     if file_path:

@@ -214,11 +214,27 @@ class BrowserAutomation:
             # Получаем cookies и headers
             cookies = await self.context.cookies()
             cookies_dict = {cookie["name"]: cookie["value"] for cookie in cookies}
-            user_agent = await self.page.evaluate("navigator.userAgent")
-            headers = {
-                "User-Agent": user_agent,
-                "Referer": self.page.url
-            }
+            
+            # Получаем все заголовки из текущего запроса
+            headers = await self.page.evaluate("""() => {
+                const headers = {};
+                for (const [key, value] of Object.entries(window.performance.getEntriesByType('resource')[0].requestHeaders || {})) {
+                    headers[key] = value;
+                }
+                return headers;
+            }""")
+            
+            # Добавляем обязательные заголовки
+            headers.update({
+                "User-Agent": await self.page.evaluate("navigator.userAgent"),
+                "Referer": self.page.url,
+                "Accept": "*/*",
+                "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+                "Connection": "keep-alive",
+                "Sec-Fetch-Dest": "empty",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Site": "same-origin"
+            })
 
             # Скачиваем файл
             async with aiohttp.ClientSession() as session:
@@ -226,7 +242,8 @@ class BrowserAutomation:
                     download_url,
                     cookies=cookies_dict,
                     headers=headers,
-                    ssl=False
+                    ssl=False,
+                    allow_redirects=True
                 ) as response:
                     if response.status == 200:
                         file_path = self.downloads_dir / filename
@@ -242,6 +259,13 @@ class BrowserAutomation:
                         return str(file_path)
                     else:
                         self.logger.error(f"Ошибка при скачивании файла: {response.status}")
+                        # Добавляем больше информации об ошибке
+                        try:
+                            error_text = await response.text()
+                            self.logger.error(f"Текст ошибки: {error_text}")
+                        except Exception as e:
+                            self.logger.error(f"Ошибка: {str(e)}")
+                            pass
                         return None
 
         except Exception as e:

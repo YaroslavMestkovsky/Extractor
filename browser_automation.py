@@ -63,45 +63,75 @@ class BrowserAutomation:
         )
         self.logger = logging.getLogger(__name__)
 
-    async def _wait_for_element(self, selector: str, timeout: int = 30000) -> None:
+    async def _wait_for_element(self, selector: str | list[str], timeout: int = 30000) -> None:
         """
         Ожидание появления элемента на странице.
 
         Args:
-            selector: CSS селектор элемента
+            selector: CSS селектор элемента или список селекторов
             timeout: Таймаут ожидания в миллисекундах
         """
-        await self.page.wait_for_selector(selector, timeout=timeout)
-        self.logger.info(f"\tЭлемент {selector} успешно загружен")
+        if isinstance(selector, list):
+            for sel in selector:
+                try:
+                    await self.page.wait_for_selector(sel, timeout=timeout)
+                    self.logger.info(f"\tЭлемент {sel} успешно загружен")
+                    return
+                except Exception:
+                    continue
+            raise Exception(f"Ни один из селекторов {selector} не был найден")
+        else:
+            await self.page.wait_for_selector(selector, timeout=timeout)
+            self.logger.info(f"\tЭлемент {selector} успешно загружен")
 
-    async def click_element(self, selector: str, wait_for: bool = True) -> None:
+    async def click_element(self, selector: str | list[str], wait_for: bool = True) -> None:
         """
         Нажатие на элемент.
 
         Args:
-            selector: CSS селектор элемента
+            selector: CSS селектор элемента или список селекторов
             wait_for: Нужно ли ждать появления элемента
         """
         if wait_for:
             await self._wait_for_element(selector)
         
-        await self.page.click(selector)
-        self.logger.info(f"\tВыполнено нажатие на элемент {selector}")
+        if isinstance(selector, list):
+            for sel in selector:
+                try:
+                    await self.page.click(sel)
+                    self.logger.info(f"\tВыполнено нажатие на элемент {sel}")
+                    return
+                except Exception:
+                    continue
+            raise Exception(f"Не удалось кликнуть ни по одному из селекторов {selector}")
+        else:
+            await self.page.click(selector)
+            self.logger.info(f"\tВыполнено нажатие на элемент {selector}")
 
-    async def input_text(self, selector: str, text: str, wait_for: bool = True) -> None:
+    async def input_text(self, selector: str | list[str], text: str, wait_for: bool = True) -> None:
         """
         Ввод текста в поле ввода.
 
         Args:
-            selector: CSS селектор элемента
+            selector: CSS селектор элемента или список селекторов
             text: Текст для ввода
             wait_for: Нужно ли ждать появления элемента
         """
         if wait_for:
             await self._wait_for_element(selector)
         
-        await self.page.fill(selector, text)
-        self.logger.info(f"\tВведен текст в элемент {selector}")
+        if isinstance(selector, list):
+            for sel in selector:
+                try:
+                    await self.page.fill(sel, text)
+                    self.logger.info(f"\tВведен текст в элемент {sel}")
+                    return
+                except Exception:
+                    continue
+            raise Exception(f"Не удалось ввести текст ни в один из селекторов {selector}")
+        else:
+            await self.page.fill(selector, text)
+            self.logger.info(f"\tВведен текст в элемент {selector}")
 
     async def setup_browser(self) -> None:
         """Инициализация браузера и создание нового контекста."""

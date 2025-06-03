@@ -31,6 +31,7 @@ class BrowserAutomation:
         self.context: Optional[BrowserContext] = None
         self.page: Optional[Page] = None
         self.playwright = None
+        self.end = False
         
         # Пути к локальным браузерам
         self.browser_paths = {
@@ -176,7 +177,10 @@ class BrowserAutomation:
                 await self.close_browser()
             else:
                 self.logger.info("Браузер оставлен открытым на некоторое время после выполнения всех действий.")
-                time.sleep(60)
+
+                while not self.end:
+                    time.sleep(3)
+
                 await self.close_browser()
 
         except Exception as e:
@@ -195,7 +199,7 @@ async def main():
         await automation.execute_actions()
     except KeyboardInterrupt:
         automation.logger.info("Получен сигнал завершения. Закрытие браузера...")
-        await automation.close_browser()
+        automation.end = True
     except Exception as e:
         automation.logger.error(f"Произошла ошибка: {str(e)}")
         await automation.close_browser()

@@ -182,12 +182,20 @@ class BrowserAutomation:
         # Настраиваем контекст с отключенным автоматическим открытием файлов
         self.context = await self.browser.new_context(
             no_viewport=True,
-            accept_downloads=True
+            accept_downloads=True,
         )
         
-        # Устанавливаем обработчик загрузок
+        # Устанавливаем обработчики событий
         self.page = await self.context.new_page()
-        self.page.on("download", self._handle_download)
+        
+        # Отслеживаем все события, связанные с загрузкой
+        self.page.on("download", lambda download: self.logger.info(f"Событие download: {download}"))
+        self.page.on("request", lambda request: self.logger.info(f"Событие request: {request.url}"))
+        self.page.on("response", lambda response: self.logger.info(f"Событие response: {response.url} - {response.headers.get('content-type', '')}"))
+        self.page.on("console", lambda msg: self.logger.info(f"Консоль браузера: {msg.text}"))
+        
+        # Отслеживаем диалоги
+        self.page.on("dialog", lambda dialog: self.logger.info(f"Диалог: {dialog.type} - {dialog.message}"))
         
         self.logger.info("Браузер успешно инициализирован")
 
@@ -251,8 +259,8 @@ class BrowserAutomation:
                 await self.close_browser()
             else:
                 self.logger.info("Браузер оставлен открытым на некоторое время после выполнения всех действий.")
-                time.sleep(self.config['other'].get('sleep', 1))
-                await self.close_browser()
+                # time.sleep(self.config['other'].get('sleep', 1))
+                # await self.close_browser()
 
         except Exception as e:
             self.logger.error(f"Произошла ошибка: {str(e)}")

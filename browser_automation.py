@@ -10,6 +10,7 @@ import logging
 import os
 import time
 import json
+import aiohttp
 from pathlib import Path
 from typing import Dict, Any, Optional
 
@@ -33,6 +34,7 @@ class BrowserAutomation:
         self.page: Optional[Page] = None
         self.playwright = None
         self.qmsext_ws = None  # WebSocket соединение с qMSExt
+        self.download_url = None  # URL для скачивания файла
         
         # Пути к локальным браузерам
         self.browser_paths = {
@@ -226,6 +228,83 @@ class BrowserAutomation:
                 }
             }))
 
+    async def _wait_for_download_url(self, timeout: int = 360) -> Optional[str]:
+        """
+        Ожидание появления URL для скачивания файла.
+
+        Args:
+            timeout: Таймаут ожидания в секундах
+
+        Returns:
+            Optional[str]: URL для скачивания или None, если URL не найден
+        """
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            # Получаем все запросы
+            requests = await self.page.context.request.all()
+            for request in requests:
+                url = request.url
+                if "/download/" in url:
+                    self.logger.info(f"Найден URL для скачивания: {url}")
+                    return url
+            
+            await asyncio.sleep(1)
+            self.logger.info(f"Ожидание URL для скачивания... Осталось {timeout - (time.time() - start_time):.0f} сек")
+        
+        self.logger.error("Не удалось найти URL для скачивания")
+        return None
+
+    async def _download_file(self, filename: str) -> Optional[str]:
+        """
+        Скачивание файла по URL.
+
+        Args:
+            filename: Имя файла для сохранения
+
+        Returns:
+            Optional[str]: Путь к сохраненному файлу или None в случае ошибки
+        """
+        try:
+            # Ждем появления URL для скачивания
+            download_url = await self._wait_for_download_url()
+            if not download_url:
+                return None
+
+            # Получаем cookies и headers
+            cookies = await self.context.cookies()
+            cookies_dict = {cookie["name"]: cookie["value"] for cookie in cookies}
+            user_agent = await self.page.evaluate("navigator.userAgent")
+            headers = {
+                "User-Agent": user_agent,
+                "Referer": self.page.url
+            }
+
+            # Скачиваем файл
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    download_url,
+                    cookies=cookies_dict,
+                    headers=headers,
+                    ssl=False
+                ) as response:
+                    if response.status == 200:
+                        file_path = self.downloads_dir / filename
+                        with open(file_path, "wb") as f:
+                            while True:
+                                chunk = await response.content.read(8192)
+                                if not chunk:
+                                    break
+                                f.write(chunk)
+                        self.logger.info(f"Файл успешно сохранен: {file_path}")
+                        return str(file_path)
+                    else:
+                        self.logger.error(f"Ошибка при скачивании файла: {response.status}")
+                        return None
+
+        except Exception as e:
+            self.logger.error(f"Ошибка при скачивании файла: {str(e)}")
+            return None
+
     async def setup_browser(self) -> None:
         """Инициализация браузера и создание нового контекста."""
         self.playwright = await async_playwright().start()
@@ -315,6 +394,21 @@ class BrowserAutomation:
                         for key in config_path:
                             value = value[key]
                     await self.input_text(selector, value, wait_for)
+                elif action_type == 'download':
+                    # Обработка скачивания файла
+                    filename = f"{action.get('filename', 'downloaded_file')}_{int(time.time())}.csv"
+                    self.logger.info(f"Начинаем скачивание файла: {filename}")
+                    
+                    # Если есть селектор, кликаем по нему для инициации скачивания
+                    if selector:
+                        await self.click_element(selector, wait_for)
+                    
+                    # Ждем и скачиваем файл
+                    file_path = await self._download_file(filename)
+                    if file_path:
+                        self.logger.info(f"Файл успешно скачан: {file_path}")
+                    else:
+                        self.logger.error("Не удалось скачать файл")
 
                 if timeout:
                     await asyncio.sleep(timeout)

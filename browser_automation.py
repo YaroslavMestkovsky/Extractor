@@ -59,12 +59,16 @@ class BrowserAutomation:
     def _setup_logging(self) -> None:
         """Настройка логирования."""
         log_config = self.config['logging']
-        logging.basicConfig(
-            encoding='utf-8',
-            filename=log_config['file'],
-            level=getattr(logging, log_config['level']),
-            format='%(asctime)s - %(levelname)s - %(message)s'
-        )
+        log_params = {
+            'encoding': 'utf-8',
+            'level': getattr(logging, log_config['level']),
+            'format': '%(asctime)s - %(levelname)s - %(message)s'
+        }
+
+        if log_config['log_in_file']:
+            log_params['filename'] = log_config['file']
+
+        logging.basicConfig(**log_params)
         self.logger = logging.getLogger(__name__)
 
     async def _wait_for_element(self, selector, timeout: int = 30000) -> None:

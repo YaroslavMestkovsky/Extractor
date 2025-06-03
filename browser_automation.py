@@ -164,20 +164,36 @@ class BrowserAutomation:
                 download_url = request.url
                 self.logger.info(f"Найден URL для скачивания: {download_url}")
 
-        # Устанавливаем обработчик запросов
+        # Создаем обработчик для блокировки ответов
+        async def handle_response(response):
+            if download_url and response.url == download_url:
+                # Блокируем ответ, чтобы предотвратить автоматическое скачивание
+                await response.abort()
+                self.logger.info("Блокируем автоматическое скачивание файла")
+
+        # Устанавливаем обработчики
         self.page.on("request", handle_request)
+        self.page.on("response", handle_response)
 
         # Ждем появления URL или истечения таймаута
         while time.time() - start_time < timeout and not download_url:
             await asyncio.sleep(1)
-            self.logger.info(f"Ожидание URL для скачивания... Осталось {timeout - (time.time() - start_time):.0f} сек")
+            remaining = int(timeout - (time.time() - start_time))
+            print(f"\rОжидание URL для скачивания... Осталось {remaining} сек", end="", flush=True)
 
-        # Удаляем обработчик запросов
+        # Добавляем перенос строки после завершения
+        print()
+
+        # Удаляем обработчики
         self.page.remove_listener("request", handle_request)
+        self.page.remove_listener("response", handle_response)
 
-        if not download_url:
-            self.logger.error("Не удалось найти URL для скачивания")
-            return None
+        # Логируем результат ожидания
+        elapsed_time = int(time.time() - start_time)
+        if download_url:
+            self.logger.info(f"URL найден через {elapsed_time} сек")
+        else:
+            self.logger.error(f"URL не найден после {elapsed_time} сек ожидания")
 
         return download_url
 

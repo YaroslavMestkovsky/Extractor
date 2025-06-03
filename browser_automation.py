@@ -160,22 +160,26 @@ class BrowserAutomation:
         file_downloaded = False
 
         # Создаем обработчик для перехвата запросов
-        async def handle_request(request):
+        async def handle_route(route):
             nonlocal download_url, file_downloaded
+            request = route.request
             if "/download/" in request.url:
                 if not download_url:
                     download_url = request.url
                     self.logger.info(f"Найден URL для скачивания: {download_url}")
                     # Блокируем первый запрос, так как мы будем скачивать файл через aiohttp
-                    await request.abort()
+                    await route.abort()
                     self.logger.info("Блокируем автоматическое скачивание файла")
                 elif file_downloaded:
                     # Если файл уже скачан, блокируем повторный запрос
-                    await request.abort()
+                    await route.abort()
                     self.logger.info("Блокируем повторное скачивание файла")
+            else:
+                # Пропускаем все остальные запросы
+                await route.continue_()
 
         # Устанавливаем обработчик
-        self.page.on("request", handle_request)
+        await self.page.route("**/*", handle_route)
 
         # Ждем появления URL или истечения таймаута
         while time.time() - start_time < timeout and not download_url:
@@ -187,7 +191,7 @@ class BrowserAutomation:
         print()
 
         # Удаляем обработчик
-        self.page.remove_listener("request", handle_request)
+        await self.page.unroute("**/*")
 
         # Логируем результат ожидания
         elapsed_time = int(time.time() - start_time)
@@ -268,7 +272,6 @@ class BrowserAutomation:
                             self.logger.error(f"Текст ошибки: {error_text}")
                         except Exception as e:
                             self.logger.error(f"Ошибка: {str(e)}")
-                            pass
                         return None
 
         except Exception as e:

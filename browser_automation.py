@@ -155,20 +155,31 @@ class BrowserAutomation:
             Optional[str]: URL для скачивания или None, если URL не найден
         """
         start_time = time.time()
-        while time.time() - start_time < timeout:
-            # Получаем все запросы
-            requests = await self.page.context.request.all()
-            for request in requests:
-                url = request.url
-                if "/download/" in url:
-                    self.logger.info(f"Найден URL для скачивания: {url}")
-                    return url
-            
+        download_url = None
+
+        # Создаем обработчик для перехвата запросов
+        async def handle_request(request):
+            nonlocal download_url
+            if "/download/" in request.url:
+                download_url = request.url
+                self.logger.info(f"Найден URL для скачивания: {download_url}")
+
+        # Устанавливаем обработчик запросов
+        self.page.on("request", handle_request)
+
+        # Ждем появления URL или истечения таймаута
+        while time.time() - start_time < timeout and not download_url:
             await asyncio.sleep(1)
             self.logger.info(f"Ожидание URL для скачивания... Осталось {timeout - (time.time() - start_time):.0f} сек")
-        
-        self.logger.error("Не удалось найти URL для скачивания")
-        return None
+
+        # Удаляем обработчик запросов
+        self.page.remove_listener("request", handle_request)
+
+        if not download_url:
+            self.logger.error("Не удалось найти URL для скачивания")
+            return None
+
+        return download_url
 
     async def _download_file(self, filename: str) -> Optional[str]:
         """

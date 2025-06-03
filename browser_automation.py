@@ -8,8 +8,7 @@
 import asyncio
 import logging
 import os
-import signal
-import sys
+import time
 from pathlib import Path
 from typing import Dict, Any, Optional
 
@@ -176,7 +175,9 @@ class BrowserAutomation:
                 self.logger.info("Закрытие браузера после выполнения всех действий")
                 await self.close_browser()
             else:
-                self.logger.info("Браузер оставлен открытым после выполнения всех действий")
+                self.logger.info("Браузер оставлен открытым на некоторое время после выполнения всех действий.")
+                time.sleep(60)
+                await self.close_browser()
 
         except Exception as e:
             self.logger.error(f"Произошла ошибка: {str(e)}")

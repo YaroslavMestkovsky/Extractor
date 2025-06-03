@@ -166,6 +166,9 @@ class BrowserAutomation:
                 if not download_url:
                     download_url = request.url
                     self.logger.info(f"Найден URL для скачивания: {download_url}")
+                    # Блокируем первый запрос, так как мы будем скачивать файл через aiohttp
+                    await request.abort()
+                    self.logger.info("Блокируем автоматическое скачивание файла")
                 elif file_downloaded:
                     # Если файл уже скачан, блокируем повторный запрос
                     await request.abort()

@@ -8,8 +8,7 @@
 import asyncio
 import logging
 import os
-import signal
-import sys
+import time
 from pathlib import Path
 from typing import Dict, Any, Optional
 
@@ -32,7 +31,7 @@ class BrowserAutomation:
         self.context: Optional[BrowserContext] = None
         self.page: Optional[Page] = None
         self.playwright = None
-
+        
         # Пути к локальным браузерам
         self.browser_paths = {
             'chromium': str(Path('browsers/chromium/chrome-win').absolute()),
@@ -107,7 +106,7 @@ class BrowserAutomation:
     async def setup_browser(self) -> None:
         """Инициализация браузера и создание нового контекста."""
         self.playwright = await async_playwright().start()
-
+        
         # Используем локальный путь к браузеру
         executable_path = os.path.join(self.browser_paths['chromium'], 'chrome.exe')
         if not os.path.exists(executable_path):
@@ -120,7 +119,7 @@ class BrowserAutomation:
                 headless=False,
                 executable_path=executable_path
             )
-
+            
         self.context = await self.browser.new_context()
         self.page = await self.context.new_page()
         self.logger.info("Браузер успешно инициализирован")
@@ -171,11 +170,21 @@ class BrowserAutomation:
                             value = value[key]
                     await self.input_text(selector, value, wait_for)
 
+            # Проверяем настройку закрытия браузера
+            if self.config['site'].get('close_browser_after_completion', True):
+                self.logger.info("Закрытие браузера после выполнения всех действий")
+                await self.close_browser()
+            else:
+                self.logger.info("Браузер оставлен открытым на некоторое время после выполнения всех действий.")
+                time.sleep(60)
+
         except Exception as e:
             self.logger.error(f"Произошла ошибка: {str(e)}")
             raise
         finally:
-            await self.close_browser()
+            # Закрываем браузер только если произошла ошибка
+            if self.config['site'].get('close_browser_after_completion', True):
+                await self.close_browser()
 
 async def main():
     """Основная функция для запуска автоматизации."""
@@ -183,9 +192,8 @@ async def main():
     
     try:
         await automation.execute_actions()
-    except KeyboardInterrupt:
-        automation.logger.info("Получен сигнал завершения. Закрытие браузера...")
-    finally:
+    except Exception as e:
+        automation.logger.error(f"Произошла ошибка: {str(e)}")
         await automation.close_browser()
 
 def run():
@@ -193,8 +201,6 @@ def run():
     logger = logging.getLogger(__name__)
     try:
         asyncio.run(main())
-    except KeyboardInterrupt:
-        logger.info("Программа завершена пользователем")
     except Exception as e:
         logger.error(f"Произошла ошибка: {str(e)}")
 

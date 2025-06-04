@@ -222,16 +222,14 @@ class BrowserAutomation:
                 # Ждем загрузки содержимого
                 await download_page.wait_for_load_state('networkidle')
                 
-                # Получаем содержимое страницы
-                content = await download_page.content()
-                
-                # Декодируем содержимое из Windows-1251 в UTF-8
-                content_bytes = content.encode('latin1')  # Сначала получаем байты
-                content_decoded = content_bytes.decode('cp1251')  # Декодируем из Windows-1251
+                # Получаем содержимое страницы через JavaScript
+                content = await download_page.evaluate("""() => {
+                    return document.documentElement.outerHTML;
+                }""")
                 
                 # Сохраняем содержимое в файл
-                with open(download_path, 'w', encoding='utf-8') as f:
-                    f.write(content_decoded)
+                with open(download_path, 'w', encoding='cp1251') as f:
+                    f.write(content)
                 
                 self.logger.info(f"Файл успешно сохранен: {download_path}")
                 return str(download_path)

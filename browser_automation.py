@@ -216,16 +216,21 @@ class BrowserAutomation:
             download_page = await self.context.new_page()
             
             try:
-                # Настраиваем обработчик для скачивания
-                async with download_page.expect_download() as download_info:
-                    # Открываем URL в новой странице
-                    await download_page.goto(download_url)
-                    # Ждем начала скачивания
-                    download = await download_info.value
-                    # Сохраняем файл
-                    await download.save_as(download_path)
-                    self.logger.info(f"Файл успешно сохранен: {download_path}")
-                    return str(download_path)
+                # Открываем URL в новой странице
+                await download_page.goto(download_url)
+                
+                # Ждем загрузки содержимого
+                await download_page.wait_for_load_state('networkidle')
+                
+                # Получаем содержимое страницы
+                content = await download_page.content()
+                
+                # Сохраняем содержимое в файл
+                with open(download_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                
+                self.logger.info(f"Файл успешно сохранен: {download_path}")
+                return str(download_path)
             finally:
                 # Закрываем страницу скачивания
                 await download_page.close()

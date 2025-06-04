@@ -212,13 +212,32 @@ class BrowserAutomation:
             # Настраиваем путь для сохранения
             download_path = self.downloads_dir / filename
             
-            # Получаем cookies из текущей сессии
+            # Получаем cookies и заголовки из текущей сессии
             cookies = await self.context.cookies()
             cookie_dict = {cookie['name']: cookie['value'] for cookie in cookies}
             
+            # Получаем заголовки из последнего запроса
+            headers = {}
+            async def handle_route(route):
+                nonlocal headers
+                request = route.request
+                if "/download/" in request.url:
+                    headers = dict(request.headers)
+                await route.continue_()
+            
+            # Устанавливаем обработчик для получения заголовков
+            await self.page.route("**/*", handle_route)
+            
+            # Делаем запрос к URL для получения заголовков
+            await self.page.goto(download_url)
+            await self.page.wait_for_load_state('networkidle')
+            
+            # Удаляем обработчик
+            await self.page.unroute("**/*")
+            
             # Скачиваем файл напрямую через aiohttp
             async with aiohttp.ClientSession(cookies=cookie_dict) as session:
-                async with session.get(download_url) as response:
+                async with session.get(download_url, headers=headers) as response:
                     if response.status == 200:
                         content = await response.read()
                         with open(download_path, 'wb') as f:

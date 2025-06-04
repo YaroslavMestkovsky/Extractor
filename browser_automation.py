@@ -204,13 +204,16 @@ class BrowserAutomation:
             Optional[str]: Путь к сохраненному файлу или None в случае ошибки
         """
         try:
+            # Ждем появления URL для скачивания
+            download_url = await self._wait_for_download_url()
+            if not download_url:
+                return None
+
             # Настраиваем обработчик для скачивания
             download_path = self.downloads_dir / filename
-            
-            # Ждем начала скачивания
-            async with self.page.expect_download(timeout=30000) as download_info:
-                # Кликаем по кнопке скачивания
-                await self.click_element(self.config['actions'][-1]['selector'])
+            async with self.page.expect_download() as download_info:
+                # Открываем URL в новой вкладке
+                await self.page.goto(download_url)
                 # Ждем начала скачивания
                 download = await download_info.value
                 # Сохраняем файл
@@ -305,7 +308,11 @@ class BrowserAutomation:
                     filename = f"{action.get('filename', 'downloaded_file')}_{int(time.time())}.csv"
                     self.logger.info(f"Начинаем скачивание файла: {filename}")
                     
-                    # Скачиваем файл
+                    # Если есть селектор, кликаем по нему для инициации скачивания
+                    if selector:
+                        await self.click_element(selector, wait_for)
+
+                    # Ждем и скачиваем файл
                     file_path = await self._download_file(filename)
                     if file_path:
                         self.logger.info(f"Файл успешно скачан: {file_path}")

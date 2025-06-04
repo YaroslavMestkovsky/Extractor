@@ -35,7 +35,13 @@ class BrowserAutomation:
         self.playwright = None
         self.download_url = None  # URL для скачивания файла
         self.file_downloaded = False
-        
+
+        self.dates_map = {
+            'yesterday': datetime.datetime.today() - datetime.timedelta(days=1),
+            'three_weeks_before': datetime.datetime.today() - datetime.timedelta(days=31),
+            'today': datetime.datetime.today(),
+        }
+
         # Пути к локальным браузерам
         self.browser_paths = {
             'chromium': str(Path('browsers/chromium/chrome-win').absolute()),
@@ -324,6 +330,9 @@ class BrowserAutomation:
                         value = self.config
                         for key in config_path:
                             value = value[key]
+                    else:
+                        value = self.dates_map[value]
+
                     await self.input_text(selector, value, wait_for)
                 elif action_type == 'download':
                     # Обработка скачивания файла

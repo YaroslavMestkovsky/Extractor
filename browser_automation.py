@@ -166,7 +166,13 @@ class BrowserAutomation:
                 if not download_url:
                     download_url = request.url
                     self.logger.info(f"Найден URL для скачивания: {request.url}")
-                # Пропускаем запрос
+                    # Отменяем автоматическое скачивание
+                    await route.abort()
+                else:
+                    # Отменяем все последующие запросы на скачивание
+                    await route.abort()
+            else:
+                # Пропускаем все остальные запросы
                 await route.continue_()
 
         # Устанавливаем обработчик

@@ -6,16 +6,16 @@
 """
 
 import asyncio
+import datetime
 import logging
 import os
 import time
-import json
-import aiohttp
 from pathlib import Path
 from typing import Dict, Any, Optional
 
 import yaml
 from playwright.async_api import async_playwright, Page, Browser, BrowserContext, Download
+
 
 class BrowserAutomation:
     """Класс для автоматизации действий в браузере."""
@@ -327,7 +327,7 @@ class BrowserAutomation:
                     await self.input_text(selector, value, wait_for)
                 elif action_type == 'download':
                     # Обработка скачивания файла
-                    filename = f"{action.get('filename', 'downloaded_file')}_{int(time.time())}.csv"
+                    filename = f"{action.get('filename', 'downloaded_file')}_{datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}.csv"
                     self.logger.info(f"Начинаем скачивание файла: {filename}")
                     
                     # Если есть селектор, кликаем по нему для инициации скачивания

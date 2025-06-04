@@ -327,7 +327,7 @@ class BrowserAutomation:
                     await self.input_text(selector, value, wait_for)
                 elif action_type == 'download':
                     # Обработка скачивания файла
-                    filename = f"{action.get('filename', 'downloaded_file')}_{datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}.csv"
+                    filename = f"{action.get('filename', 'downloaded_file')}_{datetime.datetime.now().strftime('%Y-%m-%d %H_%M')}.csv"
                     self.logger.info(f"Начинаем скачивание файла: {filename}")
                     
                     # Если есть селектор, кликаем по нему для инициации скачивания

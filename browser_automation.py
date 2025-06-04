@@ -201,7 +201,7 @@ class BrowserAutomation:
             filename: Имя файла для сохранения
 
         Returns:
-            Optional[str]: Путь к сохраненному файлу или None в случае ошибки
+            Optional[str]: Путь к сохраненному файла или None в случае ошибки
         """
         try:
             # Ждем появления URL для скачивания
@@ -225,9 +225,13 @@ class BrowserAutomation:
                 # Получаем содержимое страницы
                 content = await download_page.content()
                 
+                # Декодируем содержимое из Windows-1251 в UTF-8
+                content_bytes = content.encode('latin1')  # Сначала получаем байты
+                content_decoded = content_bytes.decode('cp1251')  # Декодируем из Windows-1251
+                
                 # Сохраняем содержимое в файл
                 with open(download_path, 'w', encoding='utf-8') as f:
-                    f.write(content)
+                    f.write(content_decoded)
                 
                 self.logger.info(f"Файл успешно сохранен: {download_path}")
                 return str(download_path)

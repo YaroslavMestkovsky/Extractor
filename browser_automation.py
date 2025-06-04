@@ -209,17 +209,25 @@ class BrowserAutomation:
             if not download_url:
                 return None
 
-            # Настраиваем обработчик для скачивания
+            # Настраиваем путь для сохранения
             download_path = self.downloads_dir / filename
-            async with self.page.expect_download() as download_info:
-                # Открываем URL в новой вкладке
-                await self.page.goto(download_url)
-                # Ждем начала скачивания
-                download = await download_info.value
-                # Сохраняем файл
-                await download.save_as(download_path)
-                self.logger.info(f"Файл успешно сохранен: {download_path}")
-                return str(download_path)
+            
+            # Получаем cookies из текущей сессии
+            cookies = await self.context.cookies()
+            cookie_dict = {cookie['name']: cookie['value'] for cookie in cookies}
+            
+            # Скачиваем файл напрямую через aiohttp
+            async with aiohttp.ClientSession(cookies=cookie_dict) as session:
+                async with session.get(download_url) as response:
+                    if response.status == 200:
+                        content = await response.read()
+                        with open(download_path, 'wb') as f:
+                            f.write(content)
+                        self.logger.info(f"Файл успешно сохранен: {download_path}")
+                        return str(download_path)
+                    else:
+                        self.logger.error(f"Ошибка при скачивании файла: HTTP {response.status}")
+                        return None
 
         except Exception as e:
             self.logger.error(f"Ошибка при скачивании файла: {str(e)}")

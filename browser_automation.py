@@ -144,8 +144,9 @@ class BrowserAutomation:
                     await self.page.fill(sel, text)
                     self.logger.info(f"\tВведен текст в элемент")
                     return
-                except Exception:
-                    continue
+                except Exception as e:
+                    self.logger.error(f"\t{e}")
+                    raise Exception(1)
             raise Exception(f"Не удалось ввести текст ни в один из селекторов {selector}")
         else:
             await self.page.fill(selector, text)

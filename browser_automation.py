@@ -156,7 +156,7 @@ class BrowserAutomation:
                                 }}
                             }}
                         """, sel)
-                    self.logger.info(f"\tВведен текст {'text'} в элемент")
+                    self.logger.info(f"\tВведен текст {text} в элемент")
                     return
                 except Exception as e:
                     self.logger.error(f"\t{e}")

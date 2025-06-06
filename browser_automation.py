@@ -146,7 +146,7 @@ class BrowserAutomation:
                     return
                 except Exception as e:
                     self.logger.error(f"\t{e}")
-                    raise Exception(1)
+                    raise Exception('Ошибка ввода текста.')
             raise Exception(f"Не удалось ввести текст ни в один из селекторов {selector}")
         else:
             await self.page.fill(selector, text)

@@ -102,16 +102,17 @@ class BrowserAutomation:
             await self.page.wait_for_selector(selector, timeout=timeout)
             self.logger.info(f"\tЭлемент успешно загружен")
 
-    async def click_element(self, selector, wait_for: bool = True) -> None:
+    async def click_element(self, selector, wait_for: bool = True, time_to_proceed=None) -> None:
         """
         Нажатие на элемент.
 
         Args:
             selector: CSS селектор элемента или список селекторов
             wait_for: Нужно ли ждать появления элемента
+            time_to_proceed: Предыдущий элемент запускает долгую загрузку, а это время ожидания
         """
         if wait_for:
-            await self._wait_for_element(selector)
+            await self._wait_for_element(selector, time_to_proceed)
         
         if isinstance(selector, list):
             for sel in selector:
@@ -346,6 +347,7 @@ class BrowserAutomation:
                 description = action.get('description', '')
                 timeout = action.get('timeout', None)
                 wait = action.get('wait', None)
+                time_to_proceed = action.get('time_to_proceed', None)
 
                 self.logger.info(f"Выполнение действия: {description}")
 
@@ -353,7 +355,7 @@ class BrowserAutomation:
                     await asyncio.sleep(wait)
 
                 if action_type == 'click' and selector:
-                    await self.click_element(selector, wait_for)
+                    await self.click_element(selector, wait_for, time_to_proceed)
                 elif action_type == 'input' and selector:
                     value = action['value']
                     # Подстановка значений из конфигурации

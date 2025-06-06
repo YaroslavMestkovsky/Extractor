@@ -145,6 +145,7 @@ class BrowserAutomation:
                     await self.page.fill(sel, text)
                 except Exception:
                     # Если fill не сработал, используем расширенный JavaScript
+                    self.logger.warning('Обычное заполнение не сработало, пробуем напрямую.')
                     await self.page.evaluate(f"""
                         (selector) => {{
                             const element = document.querySelector(selector);

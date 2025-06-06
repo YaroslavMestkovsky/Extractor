@@ -138,51 +138,49 @@ class BrowserAutomation:
         if wait_for:
             await self._wait_for_element(selector)
         
-        if isinstance(selector, list):
-            for sel in selector:
-                try:
-                    # Сначала пробуем стандартный метод fill
-                    try:
-                        await self.page.fill(sel, text)
-                    except Exception:
-                        # Если fill не сработал, используем JavaScript
-                        await self.page.evaluate(f"""
-                            (selector) => {{
-                                const element = document.querySelector(selector);
-                                if (element) {{
-                                    element.value = '{text}';
-                                    element.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                                    element.dispatchEvent(new Event('change', {{ bubbles: true }}));
-                                }}
-                            }}
-                        """, sel)
-                    self.logger.info(f"\tВведен текст {text} в элемент")
-                    return
-                except Exception as e:
-                    self.logger.error(f"\t{e}")
-                    continue
-            raise Exception(f"Не удалось ввести текст ни в один из селекторов {selector}")
-        else:
+        for sel in selector:
             try:
                 # Сначала пробуем стандартный метод fill
                 try:
-                    await self.page.fill(selector, text)
+                    await self.page.fill(sel, text)
                 except Exception:
-                    # Если fill не сработал, используем JavaScript
+                    # Если fill не сработал, используем расширенный JavaScript
                     await self.page.evaluate(f"""
                         (selector) => {{
                             const element = document.querySelector(selector);
                             if (element) {{
+                                // Пробуем разные способы установки значения
                                 element.value = '{text}';
+                                element.textContent = '{text}';
+                                element.innerText = '{text}';
+                                
+                                // Устанавливаем атрибут value
+                                element.setAttribute('value', '{text}');
+                                
+                                // Генерируем все возможные события
                                 element.dispatchEvent(new Event('input', {{ bubbles: true }}));
                                 element.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                                element.dispatchEvent(new Event('blur', {{ bubbles: true }}));
+                                element.dispatchEvent(new Event('focus', {{ bubbles: true }}));
+                                
+                                // Создаем и диспатчим события клавиатуры
+                                element.dispatchEvent(new KeyboardEvent('keydown', {{ key: 'a', code: 'KeyA', bubbles: true }}));
+                                element.dispatchEvent(new KeyboardEvent('keyup', {{ key: 'a', code: 'KeyA', bubbles: true }}));
+                                
+                                // Принудительно обновляем значение
+                                if (element.type === 'text' || element.type === 'date') {{
+                                    element.value = '{text}';
+                                }}
                             }}
                         }}
-                    """, selector)
-                self.logger.info(f"\tВведен текст в элемент")
+                    """, sel)
+                self.logger.info(f"\tВведен текст {text} в элемент")
+                return
             except Exception as e:
                 self.logger.error(f"\t{e}")
-                raise Exception('Ошибка ввода текста.')
+                continue
+        
+        raise Exception(f"Не удалось ввести текст ни в один из селекторов {selector}")
 
     async def _wait_for_download_url(self, timeout: int = 360) -> Optional[str]:
         """

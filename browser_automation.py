@@ -113,13 +113,12 @@ class BrowserAutomation:
         """
         if wait_for:
             if time_to_proceed:
-                self.logger.info(f'Ожидание завершения операции в течении {time_to_proceed / 1000}')
+            await self._wait_for_element(selector)
 
-            await self._wait_for_element(selector, time_to_proceed)
-        
         if isinstance(selector, list):
             for sel in selector:
                 try:
+                    self.logger.info(f'Ожидание завершения операции в течении {time_to_proceed / 1000}')4
                     await self.page.click(sel, timeout=time_to_proceed)
                     self.logger.info(f"\tВыполнено нажатие на элемент")
                     return

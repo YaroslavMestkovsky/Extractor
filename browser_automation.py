@@ -332,7 +332,7 @@ class BrowserAutomation:
                         for key in config_path:
                             value = value[key]
                     else:
-                        value = self.dates_map[value]
+                        value = self.dates_map[value].strftime('%d-%m-%Y')
 
                     await self.input_text(selector, value, wait_for)
                 elif action_type == 'download':

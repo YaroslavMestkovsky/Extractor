@@ -128,7 +128,7 @@ class BrowserAutomation:
 
     async def input_text(self, selector, text: str, wait_for: bool = True) -> None:
         """
-        Ввод текста в поле ввода.
+        Ввод текста в элемент.
 
         Args:
             selector: CSS селектор элемента или список селекторов
@@ -141,16 +141,48 @@ class BrowserAutomation:
         if isinstance(selector, list):
             for sel in selector:
                 try:
-                    await self.page.fill(sel, text)
+                    # Сначала пробуем стандартный метод fill
+                    try:
+                        await self.page.fill(sel, text)
+                    except Exception:
+                        # Если fill не сработал, используем JavaScript
+                        await self.page.evaluate(f"""
+                            (selector) => {{
+                                const element = document.querySelector(selector);
+                                if (element) {{
+                                    element.value = '{text}';
+                                    element.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                                    element.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                                }}
+                            }}
+                        """, sel)
                     self.logger.info(f"\tВведен текст в элемент")
                     return
                 except Exception as e:
                     self.logger.error(f"\t{e}")
-                    raise Exception('Ошибка ввода текста.')
+                    continue
             raise Exception(f"Не удалось ввести текст ни в один из селекторов {selector}")
         else:
-            await self.page.fill(selector, text)
-            self.logger.info(f"\tВведен текст в элемент")
+            try:
+                # Сначала пробуем стандартный метод fill
+                try:
+                    await self.page.fill(selector, text)
+                except Exception:
+                    # Если fill не сработал, используем JavaScript
+                    await self.page.evaluate(f"""
+                        (selector) => {{
+                            const element = document.querySelector(selector);
+                            if (element) {{
+                                element.value = '{text}';
+                                element.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                                element.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                            }}
+                        }}
+                    """, selector)
+                self.logger.info(f"\tВведен текст в элемент")
+            except Exception as e:
+                self.logger.error(f"\t{e}")
+                raise Exception('Ошибка ввода текста.')
 
     async def _wait_for_download_url(self, timeout: int = 360) -> Optional[str]:
         """

@@ -120,7 +120,7 @@ class BrowserAutomation:
         if isinstance(selector, list):
             for sel in selector:
                 try:
-                    await self.page.click(sel)
+                    await self.page.click(sel, timeout=time_to_proceed)
                     self.logger.info(f"\tВыполнено нажатие на элемент")
                     return
                 except Exception:

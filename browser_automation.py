@@ -130,7 +130,7 @@ class BrowserAutomation:
             await self.page.click(selector)
             self.logger.info(f"\tВыполнено нажатие на элемент")
 
-    async def input_text(self, selector, text: str, wait_for: bool = True) -> None:
+    async def input_text(self, selector, text: str, wait_for: bool = True, is_datetime_field: bool = False) -> None:
         """
         Ввод текста в элемент.
 
@@ -138,47 +138,21 @@ class BrowserAutomation:
             selector: CSS селектор элемента или список селекторов
             text: Текст для ввода
             wait_for: Нужно ли ждать появления элемента
+            is_datetime_field: является ли полем типа "Дата и время"
         """
         if wait_for:
             await self._wait_for_element(selector)
         
         for sel in selector:
             try:
-                # Сначала пробуем стандартный метод fill
-                try:
-                    await self.page.fill(sel, text)
-                except Exception:
-                    # Если fill не сработал, используем расширенный JavaScript
-                    self.logger.warning('Обычное заполнение не сработало, пробуем напрямую.')
-                    await self.page.evaluate(f"""
-                        (selector) => {{
-                            const element = document.querySelector(selector);
-                            if (element) {{
-                                // Пробуем разные способы установки значения
-                                element.value = '{text}';
-                                element.textContent = '{text}';
-                                element.innerText = '{text}';
-                                
-                                // Устанавливаем атрибут value
-                                element.setAttribute('value', '{text}');
-                                
-                                // Генерируем все возможные события
-                                element.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                                element.dispatchEvent(new Event('change', {{ bubbles: true }}));
-                                element.dispatchEvent(new Event('blur', {{ bubbles: true }}));
-                                element.dispatchEvent(new Event('focus', {{ bubbles: true }}));
-                                
-                                // Создаем и диспатчим события клавиатуры
-                                element.dispatchEvent(new KeyboardEvent('keydown', {{ key: 'a', code: 'KeyA', bubbles: true }}));
-                                element.dispatchEvent(new KeyboardEvent('keyup', {{ key: 'a', code: 'KeyA', bubbles: true }}));
-                                
-                                // Принудительно обновляем значение
-                                if (element.type === 'text' || element.type === 'date') {{
-                                    element.value = '{text}';
-                                }}
-                            }}
-                        }}
-                    """, sel)
+                if not is_datetime_field:
+                    try:
+                        await self.page.fill(sel, text)
+                    except Exception as e:
+                        self.logger.error(f'Не получилось ввести текст, ошибка {e}')
+                else:
+                    await self.page.click(sel)
+                    await self.page.type(sel, text)
                 self.logger.info(f"\tВведен текст {text} в элемент")
                 return
             except Exception as e:
@@ -351,6 +325,7 @@ class BrowserAutomation:
                 timeout = action.get('timeout', None)
                 wait = action.get('wait', None)
                 time_to_proceed = action.get('time_to_proceed', None)
+                is_datetime_field = False
 
                 self.logger.info(f"Выполнение действия: {description}")
 
@@ -369,8 +344,9 @@ class BrowserAutomation:
                             value = value[key]
                     else:
                         value = self.dates_map[value].strftime('%d.%m.%Y')
+                        is_datetime_field = True
 
-                    await self.input_text(selector, value, wait_for)
+                    await self.input_text(selector, value, wait_for, is_datetime_field)
                 elif action_type == 'download':
                     # Обработка скачивания файла
                     filename = f"{action.get('filename', 'downloaded_file')}_{datetime.datetime.now().strftime('%Y-%m-%d %H_%M')}.csv"

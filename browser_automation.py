@@ -210,7 +210,7 @@ class BrowserAutomation:
         # Логируем результат ожидания
         elapsed_time = int(time.time() - start_time)
         if download_url:
-            self.logger.info(f"URL найден через {elapsed_time} сек")
+            self.logger.info(f"URL сформирован за {elapsed_time} сек")
         else:
             self.logger.error(f"URL не найден после {elapsed_time} сек ожидания")
 

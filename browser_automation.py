@@ -151,7 +151,8 @@ class BrowserAutomation:
                     except Exception as e:
                         self.logger.error(f'Не получилось ввести текст, ошибка {e}')
                 else:
-                    #await self.page.click(sel)
+                    await self.page.click(sel)
+                    await asyncio.sleep(1)
                     await self.page.type(sel, text)
                 self.logger.info(f"\tВведен текст {text} в элемент")
                 return

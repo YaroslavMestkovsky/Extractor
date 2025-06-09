@@ -390,10 +390,10 @@ class BrowserAutomation:
     @staticmethod
     def _manage_uploaded_files(file):
         if 'Analytics' in file:
-            skiprows = 3,
+            skiprows = 3
             bottom_drops = [-1]
         else:
-            skiprows=2,
+            skiprows=2
             bottom_drops=[]
 
         df = pd.read_csv(file, skiprows=skiprows, encoding='cp1251', delimiter=';')

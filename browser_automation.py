@@ -389,8 +389,8 @@ class BrowserAutomation:
 
     @staticmethod
     def _manage_uploaded_files(file):
-        if 'Analytics' in file:
-            skiprows = 2
+        if 'Analytic' in file:
+            skiprows = 3
             bottom_drops = [-1]
         else:
             skiprows=2

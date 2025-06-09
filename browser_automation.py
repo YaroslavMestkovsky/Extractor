@@ -405,7 +405,7 @@ class BrowserAutomation:
         path = f"Downloads/{file.replace('.csv', '.xlsx')}"
 
         df.to_excel(path, index=True)
-        os.remove(file)
+        #os.remove(file)
 
 async def main():
     """Основная функция для запуска автоматизации."""

@@ -361,7 +361,7 @@ class BrowserAutomation:
                     if file_path:
                         self.logger.info(f"Файл успешно скачан: {file_path}")
 
-                        self.logger.info(f"Обработка файла.")
+                        self.logger.info(f"Обработка файла {file_path}.")
                         self._manage_uploaded_files(file_path)
 
                     else:
@@ -387,14 +387,15 @@ class BrowserAutomation:
             if self.config['site'].get('close_browser_after_completion', True):
                 await self.close_browser()
 
-    @staticmethod
-    def _manage_uploaded_files(file):
-        if 'Analytic' in file:
+    def _manage_uploaded_files(self, file):
+        if 'Analytics' in file:
+            self.logger.info('Обработка файла Аналитик.')
             skiprows = 3
             bottom_drops = [-1]
         else:
-            skiprows=2
-            bottom_drops=[]
+            self.logger.info('Обработка файла Специалистов.')
+            skiprows = 2
+            bottom_drops = []
 
         df = pd.read_csv(file, skiprows=skiprows, encoding='cp1251', delimiter=';')
 

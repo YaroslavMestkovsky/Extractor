@@ -232,9 +232,6 @@ class BrowserAutomation:
             download_url = await self._wait_for_download_url()
             if not download_url:
                 return None
-
-            # Настраиваем путь для сохранения
-            download_path = self.downloads_dir / filename
             
             # Создаем новую страницу в том же контексте
             download_page = await self.context.new_page()
@@ -252,11 +249,11 @@ class BrowserAutomation:
                 }""")
                 
                 # Сохраняем содержимое в файл
-                with open(download_path, 'w', encoding='cp1251') as f:
+                with open(filename, 'w', encoding='cp1251') as f:
                     f.write(content)
                 
-                self.logger.info(f"Файл успешно сохранен: {download_path}")
-                return str(download_path)
+                self.logger.info(f"Файл успешно сохранен: {filename}")
+                return str(filename)
             finally:
                 # Закрываем страницу скачивания
                 await download_page.close()

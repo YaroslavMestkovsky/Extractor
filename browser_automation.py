@@ -16,6 +16,7 @@ from typing import Dict, Any, Optional
 import yaml
 import pandas as pd
 from playwright.async_api import async_playwright, Page, Browser, BrowserContext, Download
+import aiohttp
 
 
 class BrowserAutomation:
@@ -219,44 +220,52 @@ class BrowserAutomation:
 
     async def _download_file(self, filename: str) -> Optional[str]:
         """
-        Скачивание файла по URL.
+        Скачивание файла через Network API и прямой HTTP запрос.
 
         Args:
             filename: Имя файла для сохранения
 
         Returns:
-            Optional[str]: Путь к сохраненному файла или None в случае ошибки
+            Optional[str]: Путь к сохраненному файлу или None в случае ошибки
         """
         try:
+            # Включаем прослушивание сетевых запросов
+            await self.page.route("**/*", lambda route: route.continue_())
+            
             # Ждем появления URL для скачивания
             download_url = await self._wait_for_download_url()
             if not download_url:
                 return None
+
+            # Получаем cookies и user agent
+            cookies = await self.context.cookies()
+            cookies_dict = {cookie["name"]: cookie["value"] for cookie in cookies}
+            user_agent = await self.page.evaluate("() => navigator.userAgent")
             
-            # Создаем новую страницу в том же контексте
-            download_page = await self.context.new_page()
-            
-            try:
-                # Открываем URL в новой странице
-                await download_page.goto(download_url)
-                
-                # Ждем загрузки содержимого
-                await download_page.wait_for_load_state('networkidle')
-                
-                # Получаем содержимое страницы через JavaScript
-                content = await download_page.evaluate("""() => {
-                    return document.documentElement.outerHTML;
-                }""")
-                
-                # Сохраняем содержимое в файл
-                with open(filename, 'w', encoding='cp1251') as f:
-                    f.write(content)
-                
-                self.logger.info(f"Файл успешно сохранен: {filename}")
-                return str(filename)
-            finally:
-                # Закрываем страницу скачивания
-                await download_page.close()
+            headers = {
+                "User-Agent": user_agent,
+                "Referer": self.page.url
+            }
+
+            # Скачиваем файл
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    download_url,
+                    cookies=cookies_dict,
+                    headers=headers,
+                    ssl=False
+                ) as response:
+                    if response.status != 200:
+                        self.logger.error(f"Ошибка при скачивании файла: HTTP {response.status}")
+                        return None
+                        
+                    # Сохраняем файл в бинарном режиме
+                    with open(filename, 'wb') as f:
+                        async for chunk in response.content.iter_chunked(8192):
+                            f.write(chunk)
+
+            self.logger.info(f"Файл успешно сохранен: {filename}")
+            return str(filename)
 
         except Exception as e:
             self.logger.error(f"Ошибка при скачивании файла: {str(e)}")

@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 
 import yaml
+import pandas as pd
 from playwright.async_api import async_playwright, Page, Browser, BrowserContext, Download
 
 
@@ -359,8 +360,13 @@ class BrowserAutomation:
 
                     # Ждем и скачиваем файл
                     file_path = await self._download_file(filename)
+
                     if file_path:
                         self.logger.info(f"Файл успешно скачан: {file_path}")
+
+                        self.logger.info(f"Обработка файла.")
+                        self._manage_uploaded_files(file_path)
+
                     else:
                         self.logger.error("Не удалось скачать файл")
 
@@ -383,6 +389,25 @@ class BrowserAutomation:
             # Закрываем браузер только если произошла ошибка
             if self.config['site'].get('close_browser_after_completion', True):
                 await self.close_browser()
+
+    @staticmethod
+    def _manage_uploaded_files(file):
+        if 'Analytics' in file:
+            skiprows = 3,
+            bottom_drops = [-1]
+        else:
+            skiprows=2,
+            bottom_drops=[]
+
+        df = pd.read_csv(file, skiprows=skiprows, encoding='cp1251', delimiter=';')
+
+        for _index in bottom_drops:
+            df = df.drop(df.index[_index])
+
+        path = f"Downloads/{file.replace('.csv', '.xlsx')}"
+
+        df.to_excel(path, index=True)
+        os.remove(file)
 
 async def main():
     """Основная функция для запуска автоматизации."""

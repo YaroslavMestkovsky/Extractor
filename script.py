@@ -13,10 +13,14 @@ import time
 from pathlib import Path
 from typing import Dict, Any, Optional
 
+import numpy as np
 import yaml
 import pandas as pd
-from playwright.async_api import async_playwright, Page, Browser, BrowserContext, Download
+from playwright.async_api import async_playwright, Page, Browser, BrowserContext
 import aiohttp
+
+from app.bitrix_manager import BitrixManager
+from app.postgres_manager import PostgresManager
 
 
 class BrowserAutomation:
@@ -48,12 +52,16 @@ class BrowserAutomation:
         self.browser_paths = {
             'chromium': str(Path('browsers/chromium/chrome-win').absolute()),
             'firefox': str(Path('browsers/firefox').absolute()),
-            'webkit': str(Path('browsers/webkit').absolute())
+            'webkit': str(Path('browsers/webkit').absolute()),
         }
         
         # Создаем директорию для загрузок, если она не существует
         self.downloads_dir = Path('Downloads')
         self.downloads_dir.mkdir(exist_ok=True)
+
+        # Инициализация менеджеров битрикс и постгрес
+        self.bitrix_manager = BitrixManager(self.logger)
+        self.postgres_manager = PostgresManager(self.logger)
 
     def _load_config(self, config_path: str) -> Dict[str, Any]:
         """
@@ -397,10 +405,15 @@ class BrowserAutomation:
                 await self.close_browser()
 
     def _manage_uploaded_files(self, file):
+        to_bitrix = False
+        is_analytics = False
+
         if 'Analytics' in file:
             self.logger.info('Обработка файла Аналитик.')
             skiprows = 3
             bottom_drops = [-1]
+            to_bitrix = True
+            is_analytics = True
         else:
             self.logger.info('Обработка файла Специалистов.')
             skiprows = 2
@@ -415,6 +428,49 @@ class BrowserAutomation:
 
         df.to_excel(path, index=True)
         os.remove(file)
+
+        if to_bitrix:
+            self._upload_to_bitrix(df)
+
+        self.postgres_manager.upload(df, is_analytics)
+
+    def _upload_to_bitrix(self, xlsx):
+        """Выгрузка данных по сделкам в битрикс.
+
+        Ищем совпадение следующим образом:
+        - По составному ключу (телефон, почта, фамилия, имя)
+        - По рег. номеру:
+            - По номеру телефона и ФИ
+            - По почте "" и ФИ
+        """
+
+        level_one_correlations = [
+            'Телефон',
+            'Электронная почта',
+            'ФИО',
+        ]
+        level_two_correlations = [
+            'Рег.№',
+            'Телефон',
+            'ФИО',
+            'Электронная почта',
+        ]
+
+        data = pd.read_excel(xlsx)
+        data = data.replace({np.nan: ''})
+
+        unique_rows = []
+
+        for row in data.iterrows():
+            row = row[1]
+
+            level_one_info = {key: row[key] for key in level_one_correlations}
+            level_two_info = {key: row[key] for key in level_two_correlations}
+
+            existing_row = self.bitrix_manager.get_response({})
+
+
+            print(1)
 
 async def main():
     """Основная функция для запуска автоматизации."""
@@ -435,4 +491,7 @@ def run():
         logger.error(f"Произошла ошибка: {str(e)}")
 
 if __name__ == "__main__":
-    run()
+    #run()
+    df = pd.read_excel('C:\PROJECTS\GrandMedExtractor\Downloads\Specialists_2025-06-09 16_26.xlsx')
+    automation = BrowserAutomation()
+    automation.postgres_manager.upload(df, False)

@@ -5,3 +5,6 @@ pandas
 openpyxl
 xlrd
 lxml
+requests
+sqlalchemy
+psycopg2

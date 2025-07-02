@@ -1,5 +1,5 @@
-from app.models import get_session, Specialist
-from app.source_to_db_relations import SPECIALISTS
+from app.models import get_session, Specialist, Analytic
+from app.source_to_db_relations import SPECIALISTS, ANALYTICS
 from sqlalchemy import select
 import re
 import pandas as pd
@@ -21,10 +21,44 @@ class PostgresManager:
             self._upload_specialists(df)
 
     def _upload_analytics(self, df):
-        """Загрузка аналитик."""
+        """Загрузка аналитик. Грузим без проверки уникальности, т.к. нет возможности её проверить."""
+
+        columns_to_keep = [col for col in [col.strip() for col in df.columns] if col in ANALYTICS]
+        df.columns = df.columns.str.strip()
+        df = df[columns_to_keep]
+        df = df.rename(columns=ANALYTICS)
+        df = df.where(pd.notna(df), None)
+
+        # Обработка поля age - извлекаем только цифры
+        if 'age' in df.columns:
+            df['age'] = df['age'].apply(
+                lambda x: int(re.search(r'\d+', str(x)).group())
+                if pd.notna(x) and re.search(r'\d+', str(x))
+                else None
+            )
+
+        # Обработка поля total_amount - зануляем прочерки
+        if 'total_amount' in df.columns:
+            df['total_amount'] = df['total_amount'].apply(
+                lambda x: x if x.isdigit() else None
+            )
+
+        records_to_insert = df.to_dict('records')
+        analytics = [Analytic(**record) for record in records_to_insert]
+
+        self.session.add_all(analytics)
+
+        try:
+            self.session.commit()
+            self.logger.info(f"Успешно загружено {len(analytics)} новых записей по аналитикам.")
+        except Exception as e:
+            self.session.rollback()
+            self.logger.error(f"Ошибка при загрузке данных: {str(e)}")
+            raise
 
     def _upload_specialists(self, df):
         """Загрузка специалистов."""
+
         columns_to_keep = [col for col in df.columns if col in SPECIALISTS]
         df = df[columns_to_keep]
         df = df.rename(columns=SPECIALISTS)

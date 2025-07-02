@@ -412,7 +412,6 @@ class BrowserAutomation:
             self.logger.info('Обработка файла Аналитик.')
             skiprows = 3
             bottom_drops = [-1]
-            to_bitrix = True
             is_analytics = True
         else:
             self.logger.info('Обработка файла Специалистов.')
@@ -432,6 +431,7 @@ class BrowserAutomation:
         if to_bitrix:
             self._upload_to_bitrix(df)
 
+        self.logger.info('Загрузка информации в PostgreSQL.')
         self.postgres_manager.upload(df, is_analytics)
 
     def _upload_to_bitrix(self, xlsx):
@@ -491,7 +491,9 @@ def run():
         logger.error(f"Произошла ошибка: {str(e)}")
 
 if __name__ == "__main__":
-    #run()
-    df = pd.read_excel('C:\PROJECTS\GrandMedExtractor\Downloads\Specialists_2025-06-09 16_26.xlsx')
-    automation = BrowserAutomation()
-    automation.postgres_manager.upload(df, False)
+    run()
+    #df = pd.read_excel('C:\PROJECTS\GrandMedExtractor\Downloads\Analytics_2025-06-09 16_23.xlsx')
+    #df = pd.read_excel('C:\PROJECTS\GrandMedExtractor\Downloads\Specialists_2025-06-09 16_26.xlsx')
+    #automation = BrowserAutomation()
+    #automation.postgres_manager.upload(df, True)
+    #automation.postgres_manager.upload(df, False)

@@ -1,4 +1,4 @@
-from app.models import Specialist
+from app.models import Specialist, Analytic
 from app.models import Deal, Contract
 
 
@@ -17,5 +17,11 @@ CONTRACTS = {
 SPECIALISTS = {
     column.comment: column.name
     for column in Specialist.__table__.columns
+    if column.comment is not None
+}
+
+ANALYTICS = {
+    column.comment: column.name
+    for column in Analytic.__table__.columns
     if column.comment is not None
 }

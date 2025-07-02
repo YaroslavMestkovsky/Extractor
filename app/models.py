@@ -166,7 +166,57 @@ class Specialist(Base):
     development_medium_alt = Column(String, comment='Среда для развития.1')
 
 
-# TODO модель аналитик - грузим из qMS
+class Analytic(Base):
+    """Модель аналитик."""
+
+    __tablename__ = 'grandmed_qms_analytics'
+
+    id = Column(Integer, primary_key=True)
+    registration_number = Column(String, nullable=True, comment='Рег.№')
+    full_name = Column(String, nullable=True, comment='ФИО')
+    gender = Column(String, nullable=True, comment='Пол')
+    age = Column(Integer, nullable=True, comment='Возр.')
+    okmu_code = Column(String, nullable=True, comment='Код ОКМУ')
+    service = Column(String, nullable=True, comment='Услуга')
+    first_name = Column(String, nullable=True, comment='Имя')
+    last_name = Column(String, nullable=True, comment='Фамилия')
+    phone = Column(String, nullable=True, comment='Телефон')
+    admission_type = Column(String, nullable=True, comment='Вид поступления')
+    admission_purpose = Column(String, nullable=True, comment='Цель поступления')
+    episode_number = Column(String, nullable=True, comment='№_эпизода')
+    appointment_type = Column(String, nullable=True, comment='Тип назначения')
+    episode_end_date = Column(Date, nullable=True, comment='Дата завершения эпизода')
+    appointment_date = Column(String, nullable=True, comment='Дата выполнения назначения')
+    appointment_time = Column(String, nullable=True, comment='Время назначения')
+    underperformance = Column(String, nullable=True, comment='Недовыполнение')
+    status = Column(String, nullable=True, comment='Состояние')
+    cd = Column(String, nullable=True, comment='КД')
+    bed_days = Column(String, nullable=True, comment='Количество койко-дней (по услуге пребывания в стационаре) за поисковый период')
+    department_execution = Column(String, nullable=True, comment='Отделение.Выполнение')
+    position_execution = Column(String, nullable=True, comment='Должность.Выполнение')
+    specialist_execution = Column(String, nullable=True, comment='Специалист/Ресурс.Выполнение')
+    specialist_specialization = Column(String, nullable=True, comment='Специализация исполнителя')
+    hospitalization_department = Column(String, nullable=True, comment='Отделение госпитализации')
+    tariff = Column(String, nullable=True, comment='Тариф')
+    price = Column(String, nullable=True, comment='Цена')
+    discount_percent = Column(String, nullable=True, comment='%Ск-ки')
+    total_amount = Column(String, nullable=True, comment='Сумма')
+    debt = Column(String, nullable=True, comment='Долг')
+    date = Column(Date, nullable=True, comment='Дата')
+    specialist_full_name = Column(String, nullable=True, comment='ФИО специалист')
+    attending_physician = Column(String, nullable=True, comment='Лечащий врач')
+    complex_code = Column(String, nullable=True, comment='Код комплекса')
+    price_section = Column(String, nullable=True, comment='Раздел прайса, когда услуга была назначена')
+    service_code = Column(String, nullable=True, comment='Код услуги по прайсу, когда услуга была назначена')
+    category = Column(String, nullable=True, comment='Категория')
+    execution_time = Column(String, nullable=True, comment='Время выполнения')
+    set_indicator = Column(String, nullable=True, comment='Признак набора')
+    physician_department_code = Column(String, nullable=True, comment='Код отделения лечащего врача')
+    physician_department = Column(String, nullable=True, comment='Лечащий врач: код отделения')
+    registration_number_alt = Column(String, nullable=True, comment='Рег.№.1')
+    email = Column(String, nullable=True, comment='Электронная почта')
+    middle_name = Column(String, nullable=True, comment='Отчество')
+    birth_date = Column(Date, nullable=True, comment='ДР')
 
 
 def init_tables():

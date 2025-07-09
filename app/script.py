@@ -56,7 +56,7 @@ class BrowserAutomation:
         }
         
         # Создаем директорию для загрузок, если она не существует
-        self.downloads_dir = Path('../Downloads')
+        self.downloads_dir = Path('Downloads')
         self.downloads_dir.mkdir(exist_ok=True)
 
         # Инициализация менеджеров битрикс и постгрес

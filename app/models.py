@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 
-db_confing = 'app/database.conf'
+db_confing = 'database.conf'
 config = configparser.ConfigParser()
 config.read(db_confing)
 

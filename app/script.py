@@ -50,13 +50,13 @@ class BrowserAutomation:
 
         # Пути к локальным браузерам
         self.browser_paths = {
-            'chromium': str(Path('browsers/chromium/chrome-win').absolute()),
-            'firefox': str(Path('browsers/firefox').absolute()),
-            'webkit': str(Path('browsers/webkit').absolute()),
+            'chromium': str(Path('../browsers/chromium/chrome-win').absolute()),
+            'firefox': str(Path('../browsers/firefox').absolute()),
+            'webkit': str(Path('../browsers/webkit').absolute()),
         }
         
         # Создаем директорию для загрузок, если она не существует
-        self.downloads_dir = Path('Downloads')
+        self.downloads_dir = Path('../Downloads')
         self.downloads_dir.mkdir(exist_ok=True)
 
         # Инициализация менеджеров битрикс и постгрес

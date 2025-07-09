@@ -428,7 +428,7 @@ class BrowserAutomation:
         for _index in bottom_drops:
             df = df.drop(df.index[_index])
 
-        path = f"Downloads/{file.replace('.csv', '.xlsx')}"
+        path = f"./Downloads/{file.replace('.csv', '.xlsx')}"
 
         df.to_excel(path, index=True)
         os.remove(file)

@@ -40,7 +40,7 @@ class PostgresManager:
         # Обработка поля total_amount - зануляем прочерки
         if 'total_amount' in df.columns:
             df['total_amount'] = df['total_amount'].apply(
-                lambda x: x if x.isdigit() else None
+                lambda x: x if x is not None and x.isdigit() else None
             )
 
         records_to_insert = df.to_dict('records')

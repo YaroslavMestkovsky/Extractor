@@ -1,5 +1,5 @@
-from app.models import get_session, Specialist, Analytic
-from app.enums import SPECIALISTS, ANALYTICS
+from models import get_session, Specialist, Analytic
+from enums import SPECIALISTS, ANALYTICS
 from sqlalchemy import select
 import re
 import pandas as pd

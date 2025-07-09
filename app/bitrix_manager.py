@@ -6,7 +6,7 @@ import requests
 import json
 import datetime
 
-from app.enums import BitrixDealsEnum
+from enums import BitrixDealsEnum
 
 db_confing = "app/bitrix.conf"
 config = configparser.ConfigParser()

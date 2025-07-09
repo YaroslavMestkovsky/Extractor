@@ -1,5 +1,5 @@
-from app.models import Specialist, Analytic
-from app.models import Deal, Contract
+from models import Specialist, Analytic
+from models import Deal, Contract
 
 
 DEALS = {

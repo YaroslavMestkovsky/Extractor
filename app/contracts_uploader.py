@@ -5,7 +5,7 @@ import logging
 import requests
 
 from datetime import timedelta
-from source_to_db_relations import DEALS, CONTRACTS
+from enums import DEALS, CONTRACTS
 from models import get_session, Contract
 
 

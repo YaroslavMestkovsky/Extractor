@@ -413,10 +413,15 @@ class BrowserAutomation:
             skiprows = 3
             bottom_drops = [-1]
             is_analytics = True
-        else:
+        elif 'Specialists' in file:
             self.logger.info('Обработка файла Специалистов.')
             skiprows = 2
             bottom_drops = []
+        else:
+            to_bitrix = True
+            self.logger.info('Обработка файла Пользователей.')
+            skiprows = 0
+            bottom_drops = [-1]
 
         df = pd.read_csv(file, skiprows=skiprows, encoding='cp1251', delimiter=';')
 
@@ -429,48 +434,11 @@ class BrowserAutomation:
         os.remove(file)
 
         if to_bitrix:
-            self._upload_to_bitrix(df)
-
-        self.logger.info('Загрузка информации в PostgreSQL.')
-        self.postgres_manager.upload(df, is_analytics)
-
-    def _upload_to_bitrix(self, xlsx):
-        """Выгрузка данных по сделкам в битрикс.
-
-        Ищем совпадение следующим образом:
-        - По составному ключу (телефон, почта, фамилия, имя)
-        - По рег. номеру:
-            - По номеру телефона и ФИ
-            - По почте "" и ФИ
-        """
-
-        level_one_correlations = [
-            'Телефон',
-            'Электронная почта',
-            'ФИО',
-        ]
-        level_two_correlations = [
-            'Рег.№',
-            'Телефон',
-            'ФИО',
-            'Электронная почта',
-        ]
-
-        data = pd.read_excel(xlsx)
-        data = data.replace({np.nan: ''})
-
-        unique_rows = []
-
-        for row in data.iterrows():
-            row = row[1]
-
-            level_one_info = {key: row[key] for key in level_one_correlations}
-            level_two_info = {key: row[key] for key in level_two_correlations}
-
-            existing_row = self.bitrix_manager.get_response({})
-
-
-            print(1)
+            self.logger.info('Выгрузка информации в Bitrix.')
+            self.bitrix_manager.upload(df)
+        else:
+            self.logger.info('Загрузка информации в PostgreSQL.')
+            self.postgres_manager.upload(df, is_analytics)
 
 async def main():
     """Основная функция для запуска автоматизации."""
@@ -492,8 +460,3 @@ def run():
 
 if __name__ == "__main__":
     run()
-    #df = pd.read_excel('C:\PROJECTS\GrandMedExtractor\Downloads\Analytics_2025-06-09 16_23.xlsx')
-    #df = pd.read_excel('C:\PROJECTS\GrandMedExtractor\Downloads\Specialists_2025-06-09 16_26.xlsx')
-    #automation = BrowserAutomation()
-    #automation.postgres_manager.upload(df, True)
-    #automation.postgres_manager.upload(df, False)

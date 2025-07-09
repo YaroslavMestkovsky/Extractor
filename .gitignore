@@ -4,3 +4,5 @@
 /browsers
 *.log
 /Downloads/
+/app/database.conf
+/app/bitrix.conf

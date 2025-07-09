@@ -19,8 +19,8 @@ import pandas as pd
 from playwright.async_api import async_playwright, Page, Browser, BrowserContext
 import aiohttp
 
-from app.bitrix_manager import BitrixManager
-from app.postgres_manager import PostgresManager
+from bitrix_manager import BitrixManager
+from postgres_manager import PostgresManager
 
 
 class BrowserAutomation:

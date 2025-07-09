@@ -8,7 +8,7 @@ import datetime
 
 from enums import BitrixDealsEnum
 
-db_confing = "app/bitrix.conf"
+db_confing = "bitrix.conf"
 config = configparser.ConfigParser()
 config.read(db_confing)
 

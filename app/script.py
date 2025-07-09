@@ -420,7 +420,7 @@ class BrowserAutomation:
         else:
             to_bitrix = True
             self.logger.info('Обработка файла Пользователей.')
-            skiprows = 0
+            skiprows = 2
             bottom_drops = [-1]
 
         df = pd.read_csv(file, skiprows=skiprows, encoding='cp1251', delimiter=';')
@@ -435,7 +435,7 @@ class BrowserAutomation:
 
         if to_bitrix:
             self.logger.info('Выгрузка информации в Bitrix.')
-            #self.bitrix_manager.upload(df)
+            self.bitrix_manager.upload(df)
         else:
             self.logger.info('Загрузка информации в PostgreSQL.')
             #self.postgres_manager.upload(df, is_analytics)

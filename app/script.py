@@ -435,10 +435,10 @@ class BrowserAutomation:
 
         if to_bitrix:
             self.logger.info('Выгрузка информации в Bitrix.')
-            self.bitrix_manager.upload(df)
+            #self.bitrix_manager.upload(df)
         else:
             self.logger.info('Загрузка информации в PostgreSQL.')
-            self.postgres_manager.upload(df, is_analytics)
+            #self.postgres_manager.upload(df, is_analytics)
 
 async def main():
     """Основная функция для запуска автоматизации."""

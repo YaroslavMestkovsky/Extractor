@@ -1,3 +1,5 @@
+import datetime
+
 from models import get_session, Specialist, Analytic
 from enums import SPECIALISTS, ANALYTICS
 from sqlalchemy import select
@@ -23,6 +25,14 @@ class PostgresManager:
     def _upload_analytics(self, df):
         """Загрузка аналитик. Грузим без проверки уникальности, т.к. нет возможности её проверить."""
 
+        def _parse_date(date_str):
+            if pd.isna(date_str):
+                return None
+            try:
+                return datetime.datetime.strptime(str(date_str), "%d.%m.%Y").date()
+            except Exception:
+                return None
+
         columns_to_keep = [col for col in [col.strip() for col in df.columns] if col in ANALYTICS]
         df.columns = df.columns.str.strip()
         df = df[columns_to_keep]
@@ -42,6 +52,12 @@ class PostgresManager:
             df['total_amount'] = df['total_amount'].apply(
                 lambda x: x if x is not None and x.isdigit() else None
             )
+
+        date_columns = ['date', 'birth_date', 'appointment_date', 'episode_end_date']
+
+        for col in date_columns:
+            if col in df.columns:
+                df[col] = df[col].apply(_parse_date)
 
         records_to_insert = df.to_dict('records')
         analytics = [Analytic(**record) for record in records_to_insert]

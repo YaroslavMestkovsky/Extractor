@@ -459,8 +459,10 @@ def run():
         logger.error(f"Произошла ошибка: {str(e)}")
 
 if __name__ == "__main__":
-    run()
+    #run()
     # df = pd.read_excel('C:/PROJECTS/GrandMedExtractor/Downloads/Analytics_2025-07-10 12_27.xlsx')
     # df = pd.read_excel('E:/Все Документы/Рабочий стол/Экстрактор v2/app/Downloads/Analytics_2025-07-10 12_27.xlsx')
-    # automation = BrowserAutomation()
+    df = pd.read_excel('E:/Все Документы/Рабочий стол/Экстрактор v2/app/Downloads/Contacts_2025-07-10 14_20.xlsx')
+    automation = BrowserAutomation()
     # automation.postgres_manager.upload(df, True)
+    automation.bitrix_manager.upload(df)

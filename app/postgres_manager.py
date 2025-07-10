@@ -46,7 +46,7 @@ class PostgresManager:
             )
 
         # Обработка полей даты
-        date_columns = ['date_d0']
+        date_columns = ['date', 'birth_date', 'appointment_date', 'episode_end_date']
 
         for col in date_columns:
             if col in df.columns:
@@ -87,7 +87,7 @@ class PostgresManager:
         )
 
         # Обработка полей даты
-        date_columns = ['date', 'birth_date', 'appointment_date', 'episode_end_date']
+        date_columns = ['date_d0']
 
         for col in date_columns:
             if col in df.columns:

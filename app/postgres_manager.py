@@ -25,14 +25,6 @@ class PostgresManager:
     def _upload_analytics(self, df):
         """Загрузка аналитик. Грузим без проверки уникальности, т.к. нет возможности её проверить."""
 
-        def _parse_date(date_str):
-            if pd.isna(date_str):
-                return None
-            try:
-                return datetime.datetime.strptime(str(date_str), "%d.%m.%Y").date()
-            except Exception:
-                return None
-
         columns_to_keep = [col for col in [col.strip() for col in df.columns] if col in ANALYTICS]
         df.columns = df.columns.str.strip()
         df = df[columns_to_keep]
@@ -53,11 +45,12 @@ class PostgresManager:
                 lambda x: x if x is not None and x.isdigit() else None
             )
 
-        date_columns = ['date', 'birth_date', 'appointment_date', 'episode_end_date']
+        # Обработка полей даты
+        date_columns = ['date_d0']
 
         for col in date_columns:
             if col in df.columns:
-                df[col] = df[col].apply(_parse_date)
+                df[col] = df[col].apply(self._parse_date)
 
         records_to_insert = df.to_dict('records')
         analytics = [Analytic(**record) for record in records_to_insert]
@@ -93,6 +86,13 @@ class PostgresManager:
             self.session.execute(select(Specialist.material_number)).all()
         )
 
+        # Обработка полей даты
+        date_columns = ['date', 'birth_date', 'appointment_date', 'episode_end_date']
+
+        for col in date_columns:
+            if col in df.columns:
+                df[col] = df[col].apply(self._parse_date)
+
         # Фильтруем только новые записи
         new_records = df[~df['material_number'].isin(existing_numbers)]
         
@@ -113,3 +113,12 @@ class PostgresManager:
                 self.session.rollback()
                 self.logger.error(f"Ошибка при загрузке данных: {str(e)}")
                 raise
+
+    @staticmethod
+    def _parse_date(date_str):
+        if pd.isna(date_str):
+            return None
+        try:
+            return datetime.datetime.strptime(str(date_str), "%d.%m.%Y").date()
+        except Exception:
+            return None

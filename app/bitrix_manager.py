@@ -51,6 +51,10 @@ class BitrixManager:
         records_to_upload = [rec for rec in records if rec[self.reg_num_field] not in uploaded_by_reg_num]
 
         for record in records_to_upload:
+            record[BitrixDealsEnum.CREATION] = record[BitrixDealsEnum.CREATION].strftime('%d.%m.%Y')
+            record[BitrixDealsEnum.VAR_TO_FIELD[BitrixDealsEnum.BIRTHDAY]] = record[BitrixDealsEnum.VAR_TO_FIELD[BitrixDealsEnum.BIRTHDAY]].strftime('%d.%m.%Y')
+
+        for record in records_to_upload:
             self._upload_to_bitrix(record)
 
         self.logger.info(f'Загружено: {len(records_to_upload)} записей.')
@@ -69,7 +73,7 @@ class BitrixManager:
         records_by_reg_nums = self._get_response(self.LIST_METHOD)
         reg_nums = set([rec[self.reg_num_field] for rec in records_by_reg_nums['result']])
 
-        self.logger.info(f'Уже загружено рег. номеров: {len(reg_nums)}')
+        self.logger.info(f'Уже загружено рег. номеров из этого файла: {len(reg_nums)}')
 
         return reg_nums
 

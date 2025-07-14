@@ -35,7 +35,7 @@ class BitrixDealsEnum:
     BIRTHDAY = "BIRTHDAY"
     PHONE = "PHONE"
     MAIL = "MAIL"
-    #CREATION = "DATE_CREATE"
+    CREATION = "DATE_CREATE"
 
     VAR_TO_NAME = {
         REG_NUM: "Рег.номер",
@@ -45,7 +45,7 @@ class BitrixDealsEnum:
         BIRTHDAY: "ДР",
         PHONE: "Телефон",
         MAIL: "Электронная почта",
-        #CREATION: "Дата создания",
+        CREATION: "Дата создания",
     }
 
     NAME_TO_FIELD = {
@@ -56,7 +56,7 @@ class BitrixDealsEnum:
         VAR_TO_NAME[BIRTHDAY]: "UF_CRM_1671203152488",
         VAR_TO_NAME[PHONE]: "UF_CRM_66582450DADD8",
         VAR_TO_NAME[MAIL]: "UF_CRM_1744898823",
-        # VAR_TO_NAME[CREATION]: "",
+        VAR_TO_NAME[CREATION]: "DATE_CREATE",
     }
 
     VAR_TO_FIELD = {
@@ -67,5 +67,5 @@ class BitrixDealsEnum:
         BIRTHDAY: NAME_TO_FIELD[VAR_TO_NAME[BIRTHDAY]],
         PHONE: NAME_TO_FIELD[VAR_TO_NAME[PHONE]],
         MAIL: NAME_TO_FIELD[VAR_TO_NAME[MAIL]],
-        #CREATION: NAME_TO_FIELD[],
+        CREATION: NAME_TO_FIELD[VAR_TO_NAME[CREATION]],
     }

@@ -1,4 +1,5 @@
 import os
+from turtledemo.penrose import start
 
 from script import BrowserAutomation
 
@@ -29,9 +30,11 @@ def run():
 
 if __name__ == "__main__":
     automation = BrowserAutomation()
+    logger = logging.getLogger(__name__)
 
     for file in os.listdir('../Downloads'):
         analytics = True
+        logger.info(f'Start uploading {file}')
         df = pd.read_excel(f'../Downloads/{file}')
 
         if 'E' in file:

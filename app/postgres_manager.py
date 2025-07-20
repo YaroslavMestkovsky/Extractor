@@ -58,6 +58,7 @@ class PostgresManager:
         #self.session.add_all(analytics)
 
         try:
+            self.logger.info('Begin inserting.')
             self.session.bulk_insert_mappings(Analytic, records_to_insert)
             self.session.commit()
             self.logger.info(f"Успешно загружено {len(records_to_insert)} новых записей по аналитикам.")

@@ -162,7 +162,7 @@ class Specialist(Base):
     attending_physician = Column(String, comment='Лечащий врач')
     episode_number = Column(String, comment='Номер эпизода')
     registration_number = Column(String, comment='Рег.№')
-    patient_age = Column(Integer, comment='Возраст пациента')
+    patient_age = Column(String, comment='Возраст пациента')
     development_medium_alt = Column(String, comment='Среда для развития.1')
 
 
@@ -175,7 +175,7 @@ class Analytic(Base):
     registration_number = Column(String, nullable=True, comment='Рег.№')
     full_name = Column(String, nullable=True, comment='ФИО')
     gender = Column(String, nullable=True, comment='Пол')
-    age = Column(Integer, nullable=True, comment='Возр.')
+    age = Column(String, nullable=True, comment='Возр.')
     okmu_code = Column(String, nullable=True, comment='Код ОКМУ')
     service = Column(String, nullable=True, comment='Услуга')
     first_name = Column(String, nullable=True, comment='Имя')
@@ -185,7 +185,6 @@ class Analytic(Base):
     admission_purpose = Column(String, nullable=True, comment='Цель поступления')
     episode_number = Column(String, nullable=True, comment='№_эпизода')
     appointment_type = Column(String, nullable=True, comment='Тип назначения')
-    episode_end_date = Column(Date, nullable=True, comment='Дата завершения эпизода')
     appointment_date = Column(String, nullable=True, comment='Дата выполнения назначения')
     appointment_time = Column(String, nullable=True, comment='Время назначения')
     underperformance = Column(String, nullable=True, comment='Недовыполнение')
@@ -202,7 +201,6 @@ class Analytic(Base):
     discount_percent = Column(String, nullable=True, comment='%Ск-ки')
     total_amount = Column(String, nullable=True, comment='Сумма')
     debt = Column(String, nullable=True, comment='Долг')
-    date = Column(Date, nullable=True, comment='Дата')
     specialist_full_name = Column(String, nullable=True, comment='ФИО специалист')
     attending_physician = Column(String, nullable=True, comment='Лечащий врач')
     complex_code = Column(String, nullable=True, comment='Код комплекса')
@@ -216,7 +214,10 @@ class Analytic(Base):
     registration_number_alt = Column(String, nullable=True, comment='Рег.№.1')
     email = Column(String, nullable=True, comment='Электронная почта')
     middle_name = Column(String, nullable=True, comment='Отчество')
+
+    date = Column(Date, nullable=True, comment='Дата')
     birth_date = Column(Date, nullable=True, comment='ДР')
+    episode_end_date = Column(Date, nullable=True, comment='Дата завершения эпизода')
 
 
 def init_tables():

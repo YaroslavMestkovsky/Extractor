@@ -42,24 +42,25 @@ class PostgresManager:
         # Обработка поля total_amount - зануляем прочерки
         if 'total_amount' in df.columns:
             df['total_amount'] = df['total_amount'].apply(
-                lambda x: x if x is not None and x.isdigit() else None
+                lambda x: x if x is not None and type(x) == int else None
             )
 
         # Обработка полей даты
-        date_columns = ['date', 'birth_date', 'appointment_date', 'episode_end_date']
+        date_columns = ['date', 'birth_date', 'episode_end_date']
 
         for col in date_columns:
             if col in df.columns:
                 df[col] = df[col].apply(self._parse_date)
 
         records_to_insert = df.to_dict('records')
-        analytics = [Analytic(**record) for record in records_to_insert]
+        #analytics = [Analytic(**record) for record in records_to_insert]
 
-        self.session.add_all(analytics)
+        #self.session.add_all(analytics)
 
         try:
+            self.session.bulk_insert_mappings(Analytic, records_to_insert)
             self.session.commit()
-            self.logger.info(f"Успешно загружено {len(analytics)} новых записей по аналитикам.")
+            self.logger.info(f"Успешно загружено {len(records_to_insert)} новых записей по аналитикам.")
         except Exception as e:
             self.session.rollback()
             self.logger.error(f"Ошибка при загрузке данных: {str(e)}")

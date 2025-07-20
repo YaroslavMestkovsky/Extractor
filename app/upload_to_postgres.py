@@ -1,6 +1,6 @@
 import os
 
-from app.script import BrowserAutomation
+from script import BrowserAutomation
 
 import asyncio
 import logging

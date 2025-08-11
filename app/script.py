@@ -229,10 +229,10 @@ class BrowserAutomation:
     async def _download_file(self, filename: str) -> Optional[str]:
         """
         Скачивание файла через Network API и прямой HTTP запрос.
-
+        
         Args:
             filename: Имя файла для сохранения
-
+        
         Returns:
             Optional[str]: Путь к сохраненному файлу или None в случае ошибки
         """
@@ -278,6 +278,57 @@ class BrowserAutomation:
         except Exception as e:
             self.logger.error(f"Ошибка при скачивании файла: {str(e)}")
             return None
+
+    async def _intercept_and_save_download(self, filename: str, selector: Optional[Any], wait_for: bool) -> Optional[str]:
+        """
+        Перехватывает запрос на скачивание, выполняет запрос в контексте браузера и сохраняет файл,
+        предотвращая стандартное скачивание браузером.
+        """
+        download_captured: Dict[str, Any] = {"path": None}
+        done_event = asyncio.Event()
+        timeout_seconds = self.config.get('other', {}).get('download_timeout', 360)
+
+        async def handle_route(route):
+            request = route.request
+            if "/download/" in request.url and download_captured["path"] is None:
+                try:
+                    response = await route.fetch()
+                    if response.status != 200:
+                        self.logger.error(f"Ошибка при скачивании файла (перехват): HTTP {response.status}")
+                    else:
+                        content = await response.body()
+                        with open(filename, 'wb') as f:
+                            f.write(content)
+                        download_captured["path"] = filename
+                        self.logger.info(f"Файл перехвачен и сохранен: {filename}")
+                except Exception as e:
+                    self.logger.error(f"Ошибка при перехвате загрузки: {e}")
+                finally:
+                    try:
+                        # Отменяем оригинальный запрос, чтобы не было стандартной загрузки
+                        await route.abort()
+                    except Exception:
+                        pass
+                    done_event.set()
+            else:
+                await route.continue_()
+
+        await self.page.route("**/*", handle_route)
+        try:
+            if selector:
+                await self.click_element(selector, wait_for)
+            try:
+                await asyncio.wait_for(done_event.wait(), timeout=timeout_seconds)
+            except asyncio.TimeoutError:
+                self.logger.error(f"Таймаут ожидания перехвата загрузки ({timeout_seconds} сек)")
+        finally:
+            try:
+                await self.page.unroute("**/*", handle_route)
+            except Exception:
+                # На случай, если обработчик уже снят
+                pass
+
+        return download_captured["path"]
 
     async def setup_browser(self) -> None:
         """Инициализация браузера и создание нового контекста."""
@@ -364,23 +415,16 @@ class BrowserAutomation:
 
                     await self.input_text(selector, value, wait_for, is_datetime_field)
                 elif action_type == 'download':
-                    # Обработка скачивания файла
+                    # Обработка скачивания файла с перехватом
                     filename = f"{action.get('filename', 'downloaded_file')}_{datetime.datetime.now().strftime('%Y-%m-%d %H_%M')}.csv"
-                    self.logger.info(f"Начинаем скачивание файла: {filename}")
-                    
-                    # Если есть селектор, кликаем по нему для инициации скачивания
-                    if selector:
-                        await self.click_element(selector, wait_for)
+                    self.logger.info(f"Начинаем скачивание файла (перехват): {filename}")
 
-                    # Ждем и скачиваем файл
-                    file_path = await self._download_file(filename)
+                    file_path = await self._intercept_and_save_download(filename, selector, wait_for)
 
                     if file_path:
                         self.logger.info(f"Файл успешно скачан: {file_path}")
-
                         self.logger.info(f"Обработка файла {file_path}.")
                         self._manage_uploaded_files(file_path)
-
                     else:
                         self.logger.error("Не удалось скачать файл")
 

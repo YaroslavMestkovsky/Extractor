@@ -106,6 +106,9 @@ class PostgresManager:
             self.logger.info("Нет новых записей для загрузки")
         else:
             # Конвертируем записи в список словарей
+
+            new_records = new_records.replace({pd.NaT: ""})
+            new_records = new_records.map(lambda x: "" if x is NaT else x)
             records_to_insert = new_records.to_dict('records')
 
             # Создаем объекты Specialist и добавляем их в сессию

@@ -204,7 +204,7 @@ class Analytic(Base):
     specialist_full_name = Column(String, nullable=True, comment='ФИО специалист')
     attending_physician = Column(String, nullable=True, comment='Лечащий врач')
     complex_code = Column(String, nullable=True, comment='Код комплекса')
-    price_section = Column(String, nullable=True, comment='Раздел прайса, когда услуга была назначена')
+    price_section = Column(String, nullable=True, comment='Раздел прайса на дату, когда услуга была назначена')
     service_code = Column(String, nullable=True, comment='Код услуги по прайсу, когда услуга была назначена')
     category = Column(String, nullable=True, comment='Категория')
     execution_time = Column(String, nullable=True, comment='Время выполнения')
@@ -215,9 +215,8 @@ class Analytic(Base):
     email = Column(String, nullable=True, comment='Электронная почта')
     middle_name = Column(String, nullable=True, comment='Отчество')
     episode_end_date = Column(String, nullable=True, comment='Дата завершения эпизода')
-
-    date = Column(Date, nullable=True, comment='Дата')
-    birth_date = Column(Date, nullable=True, comment='ДР')
+    date = Column(String, nullable=True, comment='Дата')
+    birth_date = Column(String, nullable=True, comment='ДР')
 
 
 def init_tables():

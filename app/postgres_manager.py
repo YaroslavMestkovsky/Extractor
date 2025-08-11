@@ -1,5 +1,7 @@
 import datetime
 
+from pandas import NaT
+
 from models import get_session, Specialist, Analytic
 from enums import SPECIALISTS, ANALYTICS
 from sqlalchemy import select
@@ -52,6 +54,8 @@ class PostgresManager:
             if col in df.columns:
                 df[col] = df[col].apply(self._parse_date)
 
+        df = df.replace({pd.NaT: ""})
+        df = df.map(lambda x: "" if x is NaT else x)
         records_to_insert = df.to_dict('records')
         #analytics = [Analytic(**record) for record in records_to_insert]
 
@@ -118,9 +122,15 @@ class PostgresManager:
 
     @staticmethod
     def _parse_date(date_str):
-        if pd.isna(date_str):
+        if date_str is not None:
+            return str(date_str)
+
+        else:
             return None
-        try:
-            return datetime.datetime.strptime(str(date_str), "%d.%m.%Y").date()
-        except Exception:
-            return None
+
+        #if pd.isna(date_str):
+        #    return None
+        #try:
+        #    return datetime.datetime.strptime(str(date_str), "%d.%m.%Y").date()
+        #except Exception:
+        #    return None

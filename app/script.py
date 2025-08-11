@@ -292,24 +292,55 @@ class BrowserAutomation:
             request = route.request
             if "/download/" in request.url and download_captured["path"] is None:
                 try:
+                    # Пытаемся выполнить запрос в контексте браузера
                     response = await route.fetch()
-                    if response.status != 200:
-                        self.logger.error(f"Ошибка при скачивании файла (перехват): HTTP {response.status}")
+                    status = response.status
+                    if status != 200:
+                        self.logger.error(f"Ошибка при скачивании файла (перехват): HTTP {status}")
+                        content = None
                     else:
                         content = await response.body()
-                        with open(filename, 'wb') as f:
-                            f.write(content)
-                        download_captured["path"] = filename
-                        self.logger.info(f"Файл перехвачен и сохранен: {filename}")
                 except Exception as e:
-                    self.logger.error(f"Ошибка при перехвате загрузки: {e}")
+                    # Фолбэк: используем APIRequestContext из текущего BrowserContext
+                    self.logger.warning(f"route.fetch() не удался ({e}), пробую через context.request")
+                    content = None
+                    status = None
+                    try:
+                        api = self.context.request
+                        method = request.method.upper()
+                        # Копируем заголовки, убирая проблемные
+                        req_headers = {k: v for k, v in request.headers.items()
+                                       if not k.lower().startswith(":") and k.lower() not in ["host", "content-length"]}
+                        data = None
+                        if method in ["POST", "PUT", "PATCH"]:
+                            data = request.post_data
+                        # Вызываем соответствующий HTTP метод
+                        http_call = getattr(api, method.lower()) if hasattr(api, method.lower()) else api.get
+                        api_response = await http_call(request.url, headers=req_headers, data=data, fail_on_status_code=False)
+                        status = api_response.status
+                        if status != 200:
+                            self.logger.error(f"Ошибка при скачивании файла (API контекст): HTTP {status}")
+                        else:
+                            content = await api_response.body()
+                    except Exception as e2:
+                        self.logger.error(f"Ошибка при фолбэке context.request: {e2}")
                 finally:
                     try:
                         # Отменяем оригинальный запрос, чтобы не было стандартной загрузки
                         await route.abort()
                     except Exception:
                         pass
-                    done_event.set()
+
+                if content is not None and status == 200:
+                    try:
+                        with open(filename, 'wb') as f:
+                            f.write(content)
+                        download_captured["path"] = filename
+                        self.logger.info(f"Файл перехвачен и сохранен: {filename}")
+                    except Exception as e:
+                        self.logger.error(f"Ошибка при сохранении файла: {e}")
+                done_event.set()
+                return
             else:
                 await route.continue_()
 
@@ -339,19 +370,20 @@ class BrowserAutomation:
         if not os.path.exists(executable_path):
             self.logger.warning(f"Локальный браузер не найден по пути {executable_path}")
             self.logger.info("Используем браузер из системной установки")
-            self.browser = await self.playwright.chromium.launch(headless=False, args=["--start-maximized"])
+            self.browser = await self.playwright.chromium.launch(headless=False, args=["--start-maximized", "--ignore-certificate-errors"])
         else:
             self.logger.info(f"Используем локальный браузер из {executable_path}")
             self.browser = await self.playwright.chromium.launch(
                 headless=False,
                 executable_path=executable_path,
-                args=["--start-maximized"],
+                args=["--start-maximized", "--ignore-certificate-errors"],
             )
             
         # Настраиваем контекст с отключенным автоматическим открытием файлов
         self.context = await self.browser.new_context(
             no_viewport=True,
             accept_downloads=True,
+            ignore_https_errors=True,
         )
         
         # Устанавливаем обработчики событий

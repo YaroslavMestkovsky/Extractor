@@ -157,7 +157,7 @@ class Specialist(Base):
     fertilization_assessment = Column(String, comment='Оценка оплодотворения')
     development_medium = Column(String, comment='Среда для развития')
     incubator = Column(String, comment='Инкубатор')
-    date_d0 = Column(Date, comment='Дата D0')
+    date_d0 = Column(String, comment='Дата D0')
     embryologist = Column(String, comment='Эмбриолог')
     attending_physician = Column(String, comment='Лечащий врач')
     episode_number = Column(String, comment='Номер эпизода')

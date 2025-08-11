@@ -4,9 +4,12 @@ from typing import Any
 import pandas as pd
 import requests
 import json
-import datetime
+import urllib3
 
 from enums import BitrixDealsEnum
+
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 db_confing = "bitrix.conf"
 config = configparser.ConfigParser()
@@ -71,24 +74,37 @@ class BitrixManager:
         })
 
         records_by_reg_nums = self._get_response(self.LIST_METHOD)
-        reg_nums = set([rec[self.reg_num_field] for rec in records_by_reg_nums['result']])
+        reg_nums = set([rec[self.reg_num_field] for rec in records_by_reg_nums])
 
         self.logger.info(f'Уже загружено рег. номеров из этого файла: {len(reg_nums)}')
 
         return reg_nums
 
     def _get_response(self, method):
-        result = None
+        result = []
 
-        try:
+        def get_records():
             response = requests.post(
                 f"{self.WEBHOOK_URL}{method}",
                 headers=self.HEADERS,
                 data=json.dumps(self.DATA),
+                verify=False,
             )
 
             response.raise_for_status()
-            result = response.json()
+            recs = response.json()
+
+            return recs
+
+        try:
+            _next = 0
+
+            while _next is not None:
+                self.DATA['start'] = _next
+                records = get_records()
+                result.extend(records['result'])
+
+                _next = records.get('next')
 
         except requests.exceptions.RequestException as e:
             self.logger.error(f"Произошла ошибка при выполнении запроса: {e}")
@@ -105,7 +121,7 @@ class BitrixManager:
         """Выгрузка сделки в битрикс."""
 
         try:
-            response = requests.post(f"{self.WEBHOOK_URL}{self.ADD_METHOD}", json={"fields": record})
+            response = requests.post(f"{self.WEBHOOK_URL}{self.ADD_METHOD}", json={"fields": record}, verify=False)
             response.raise_for_status()
 
             if response.status_code == 200:

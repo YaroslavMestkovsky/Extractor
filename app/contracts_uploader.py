@@ -43,7 +43,7 @@ class ContractsUploader:
         self.session = get_session()
 
     def run(self):
-        """Загружаем контракты по следующему алгоритму:
+        """Загружаем контракты по следующему алгоритму: # todo с 23 года
         1. Проверяем дату последнего загруженного в БД контракта и берем 1 день до него.
         2. Полученные данные подготавливаем для сохранения в БД.
         3. Создаем новую запись, если полученного bitrix_id уже нет в БД, иначе обновляем.
@@ -93,7 +93,7 @@ class ContractsUploader:
 
     def _get_start_date(self):
         last_uploaded_deal = self.session.query(Contract).order_by("date_create").with_entities(Contract.date_create).first()
-        start_date = last_uploaded_deal[0] - timedelta(days=1) if last_uploaded_deal else datetime.datetime(2025, 5, 27)
+        start_date = last_uploaded_deal[0] - timedelta(days=1) if last_uploaded_deal else datetime.datetime(2023, 1, 1)
 
         return start_date
 

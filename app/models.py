@@ -214,10 +214,10 @@ class Analytic(Base):
     registration_number_alt = Column(String, nullable=True, comment='Рег.№.1')
     email = Column(String, nullable=True, comment='Электронная почта')
     middle_name = Column(String, nullable=True, comment='Отчество')
+    episode_end_date = Column(String, nullable=True, comment='Дата завершения эпизода')
 
     date = Column(Date, nullable=True, comment='Дата')
     birth_date = Column(Date, nullable=True, comment='ДР')
-    episode_end_date = Column(Date, nullable=True, comment='Дата завершения эпизода')
 
 
 def init_tables():

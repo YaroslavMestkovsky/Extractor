@@ -54,8 +54,8 @@ class BitrixManager:
         records_to_upload = [rec for rec in records if rec[self.reg_num_field] not in uploaded_by_reg_num]
 
         for record in records_to_upload:
-            record[BitrixDealsEnum.CREATION] = record[BitrixDealsEnum.CREATION].strftime('%d.%m.%Y')
-            record[BitrixDealsEnum.VAR_TO_FIELD[BitrixDealsEnum.BIRTHDAY]] = record[BitrixDealsEnum.VAR_TO_FIELD[BitrixDealsEnum.BIRTHDAY]].strftime('%d.%m.%Y')
+            record[BitrixDealsEnum.CREATION] = record[BitrixDealsEnum.CREATION]
+            record[BitrixDealsEnum.VAR_TO_FIELD[BitrixDealsEnum.BIRTHDAY]] = record[BitrixDealsEnum.VAR_TO_FIELD[BitrixDealsEnum.BIRTHDAY]]
 
         for record in records_to_upload:
             self._upload_to_bitrix(record)

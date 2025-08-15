@@ -27,6 +27,12 @@ class PostgresManager:
     def _upload_analytics(self, df):
         """Загрузка аналитик. Грузим без проверки уникальности, т.к. нет возможности её проверить."""
 
+        len_df = df.shape[0]
+        df = df[df['Категория пациента'] != 'Тестовый пациент']
+        skipped_rows = len_df - df.shape[0]
+
+        self.logger.info(f'Skipped {skipped_rows} rows')
+
         columns_to_keep = [col for col in [col.strip() for col in df.columns] if col in ANALYTICS]
         df.columns = df.columns.str.strip()
         df = df[columns_to_keep]

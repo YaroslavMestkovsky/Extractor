@@ -70,6 +70,7 @@ class PostgresManager:
         try:
             self.logger.info('Begin inserting.')
 
+            total_rows = len(records_to_insert)
             chunk_size = 50000
 
             for i in range(0, len(records_to_insert), chunk_size):
@@ -77,9 +78,9 @@ class PostgresManager:
 
                 self.session.bulk_insert_mappings(Analytic, chunk)
                 self.session.commit()
-                self.logger.info(f"Inserted {len(chunk)} records in chunk {i}.")
+                self.logger.info(f"Inserted {len(chunk)}/{total_rows} records.")
 
-            self.logger.info(f"Успешно загружено {len(records_to_insert)} новых записей по аналитикам.")
+            self.logger.info(f"Успешно загружено {total_rows} новых записей по аналитикам.")
         except Exception as e:
             self.session.rollback()
             self.logger.error(f"Ошибка при загрузке данных: {str(e)}")

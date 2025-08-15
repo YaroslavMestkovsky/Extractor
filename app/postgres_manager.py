@@ -69,8 +69,16 @@ class PostgresManager:
 
         try:
             self.logger.info('Begin inserting.')
-            self.session.bulk_insert_mappings(Analytic, records_to_insert)
-            self.session.commit()
+
+            chunk_size = 50000
+
+            for i in range(0, len(records_to_insert), chunk_size):
+                chunk = records_to_insert[i:i + chunk_size]
+
+                self.session.bulk_insert_mappings(Analytic, chunk)
+                self.session.commit()
+                self.logger.info(f"Inserted {len(chunk)} records in chunk {i}.")
+
             self.logger.info(f"Успешно загружено {len(records_to_insert)} новых записей по аналитикам.")
         except Exception as e:
             self.session.rollback()

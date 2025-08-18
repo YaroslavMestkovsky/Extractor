@@ -50,7 +50,7 @@ class PostgresManager:
         # Обработка поля total_amount - зануляем прочерки
         if 'total_amount' in df.columns:
             df['total_amount'] = df['total_amount'].apply(
-                lambda x: x if x is not None and type(x) == int else None
+                lambda x: x if x != '-' else None
             )
 
         # Обработка полей даты

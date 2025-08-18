@@ -205,7 +205,7 @@ class Analytic(Base):
     attending_physician = Column(String, nullable=True, comment='Лечащий врач')
     complex_code = Column(String, nullable=True, comment='Код комплекса')
     price_section = Column(String, nullable=True, comment='Раздел прайса на дату, когда услуга была назначена')
-    service_code = Column(String, nullable=True, comment='Код услуги по прайсу, когда услуга была назначена')
+    service_code = Column(String, nullable=True, comment='Код услуги по прайсу на дату, когда услуга была назначена')
     category = Column(String, nullable=True, comment='Категория')
     execution_time = Column(String, nullable=True, comment='Время выполнения')
     set_indicator = Column(String, nullable=True, comment='Признак набора')

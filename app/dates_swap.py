@@ -27,13 +27,13 @@ for n, record in enumerate(records, 1):
     old_date = record.episode_end_date
     new_date = convert_date_format(old_date)
 
-    print(f"\rОбработка... {n}/{len(records)}: {old_date} to {new_date}", end="", flush=True)
+    print(f"\rОбработка... {n}/{len(records)}", end="", flush=True)
 
     if new_date != old_date:
         # Обновляем запись в базе данных
         stmt = update(model_table) \
             .where(model_table.c.id == record.id) \
-            .values(date=new_date)
+            .values(episode_end_date=new_date)
         session.execute(stmt)
 
 print()

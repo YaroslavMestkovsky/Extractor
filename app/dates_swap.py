@@ -2,7 +2,7 @@ from sqlalchemy import create_engine, MetaData, Table, update
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 
-from app.models import get_session, engine
+from models import get_session, engine
 
 session = get_session()
 metadata = MetaData()
@@ -23,11 +23,11 @@ def convert_date_format(date_str):
 records = session.query(model_table).all()
 
 # Обновляем каждую запись
-for n, record in enumerate(records):
+for n, record in enumerate(records, 1):
     old_date = record.episode_end_date
     new_date = convert_date_format(old_date)
 
-    print(f"\rОбработка... {n}/{len(records)}", end="", flush=True)
+    print(f"\rОбработка... {n}/{len(records)}: {old_date} to {new_date}", end="", flush=True)
 
     if new_date != old_date:
         # Обновляем запись в базе данных

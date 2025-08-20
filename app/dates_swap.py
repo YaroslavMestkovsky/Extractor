@@ -20,12 +20,23 @@ def convert_date_format(date_str):
         return date_str
 
 
+def convert_date_format2(date_str):
+    try:
+        # Парсим исходную дату
+        dt = datetime.strptime(date_str, "%d-%m-%Y")
+        # Преобразуем в новый формат
+        return dt.strftime("%d.%m.%Y")
+    except ValueError:
+        # Если формат не совпадает, возвращаем исходное значение
+        return date_str
+
+
 records = session.query(model_table).all()
 
 # Обновляем каждую запись
 for n, record in enumerate(records, 1):
     old_date = record.episode_end_date
-    new_date = convert_date_format(old_date)
+    new_date = convert_date_format2(old_date)
 
     print(f"\rОбработка... {n}/{len(records)}", end="", flush=True)
 

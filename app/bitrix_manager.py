@@ -18,6 +18,7 @@ config.read(db_confing)
 
 class BitrixManager:
     WEBHOOK_URL = config.get("base", "webhook_url")
+    CATEGORY_ID = config.get("base", "category_id")
     GET_METHOD = config.get("deals", "get_method")
     ADD_METHOD = config.get("deals", "add_method")
     LIST_METHOD = config.get("deals", "list_method")
@@ -45,7 +46,10 @@ class BitrixManager:
         df = df.rename(columns=BitrixDealsEnum.NAME_TO_FIELD)
         df = df.where(pd.notna(df), None)
 
-        records = df.to_dict('records')
+        for col in df.select_dtypes(include=['datetime64']).columns:
+            df[col] = df[col].astype(str)
+
+        records = df.to_dict("records")
 
         reg_nums = [rec[self.reg_num_field] for rec in records]
         reg_nums = [reg_num for reg_num in reg_nums if reg_num]
@@ -54,29 +58,33 @@ class BitrixManager:
         records_to_upload = [rec for rec in records if rec[self.reg_num_field] not in uploaded_by_reg_num]
 
         for record in records_to_upload:
+            record["CATEGORY_ID"] = self.CATEGORY_ID
             record[BitrixDealsEnum.CREATION] = record[BitrixDealsEnum.CREATION]
             record[BitrixDealsEnum.VAR_TO_FIELD[BitrixDealsEnum.BIRTHDAY]] = record[BitrixDealsEnum.VAR_TO_FIELD[BitrixDealsEnum.BIRTHDAY]]
 
         for record in records_to_upload:
             self._upload_to_bitrix(record)
 
-        self.logger.info(f'Загружено: {len(records_to_upload)} записей.')
+        self.logger.info(f"Загружено: {len(records_to_upload)} записей.")
 
     def _get_records_by_reg_nums(self, reg_nums):
         """Получаем рег. номера из битрикса что бы понять, что уже загружено."""
 
-        _filter = {f'@{self.reg_num_field}': reg_nums}
+        _filter = {
+            f"@{self.reg_num_field}": reg_nums,
+            "CATEGORY_ID": self.CATEGORY_ID,
+        }
         _select = [self.reg_num_field]
 
         self.DATA.update({
-            'FILTER': _filter,
-            'SELECT': _select,
+            "FILTER": _filter,
+            "SELECT": _select,
         })
 
         records_by_reg_nums = self._get_response(self.LIST_METHOD)
         reg_nums = set([rec[self.reg_num_field] for rec in records_by_reg_nums])
 
-        self.logger.info(f'Уже загружено рег. номеров из этого файла: {len(reg_nums)}')
+        self.logger.info(f"Уже загружено рег. номеров из этого файла: {len(reg_nums)}")
 
         return reg_nums
 
@@ -100,11 +108,11 @@ class BitrixManager:
             _next = 0
 
             while _next is not None:
-                self.DATA['start'] = _next
+                self.DATA["start"] = _next
                 records = get_records()
-                result.extend(records['result'])
+                result.extend(records["result"])
 
-                _next = records.get('next')
+                _next = records.get("next")
 
         except requests.exceptions.RequestException as e:
             self.logger.error(f"Произошла ошибка при выполнении запроса: {e}")
